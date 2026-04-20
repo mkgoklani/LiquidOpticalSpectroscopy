@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Spectrometer Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-8 flex flex-col items-center">
+
+    <header class="w-full max-w-4xl flex justify-between items-center mb-10">
+        <div>
+            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                AI Spectrometer
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Real-time Supply Chain Adulteration Scan</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span class="text-sm font-medium text-emerald-400" id="status-text">Connected</span>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Purity Percentage Card -->
+        <div class="glass rounded-2xl p-6 flex flex-col items-center justify-center col-span-1 md:col-span-2 shadow-2xl relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <h2 class="text-lg font-semibold text-slate-300 mb-2">Estimated Purity</h2>
+            <div class="flex items-baseline gap-2">
+                <span id="purity" class="text-6xl font-bold text-emerald-400 tracking-tighter transition-all duration-300 animate-pulse-slow">--</span>
+                <span class="text-3xl text-emerald-400/80">%</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-4">AI Model Inference (Simulated MVP)</p>
+        </div>
+
+        <!-- Optical Sensors -->
+        <div class="glass rounded-2xl p-6 shadow-xl">
+            <h3 class="text-slate-300 font-semibold mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Optical Sensors
+            </h3>
+            
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <span class="w-10 text-red-400 font-medium">R</span>
+                    <div class="w-full bg-slate-800 rounded-full h-3 mx-3 overflow-hidden">
+                        <div id="bar-r" class="bg-red-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="val-r" class="w-10 text-right text-sm text-slate-400">0</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-10 text-green-400 font-medium">G</span>
+                    <div class="w-full bg-slate-800 rounded-full h-3 mx-3 overflow-hidden">
+                        <div id="bar-g" class="bg-green-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="val-g" class="w-10 text-right text-sm text-slate-400">0</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-10 text-blue-400 font-medium">B</span>
+                    <div class="w-full bg-slate-800 rounded-full h-3 mx-3 overflow-hidden">
+                        <div id="bar-b" class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="val-b" class="w-10 text-right text-sm text-slate-400">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conductivity -->
+        <div class="glass rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <h3 class="text-slate-300 font-semibold mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Conductivity
+            </h3>
+            <div class="flex flex-col items-center justify-center flex-grow">
+                <div class="relative">
+                    <svg class="w-32 h-32 transform -rotate-90">
+                        <circle cx="64" cy="64" r="60" fill="transparent" stroke="#1e293b" stroke-width="8"></circle>
+                        <circle id="cond-ring" cx="64" cy="64" r="60" fill="transparent" stroke="#eab308" stroke-width="8" stroke-dasharray="377" stroke-dashoffset="377" class="transition-all duration-500" stroke-linecap="round"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="cond-val" class="text-2xl font-bold text-white">0</span>
+                        <span class="text-xs text-slate-400">mV</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Metadata -->
+        <div class="glass rounded-2xl p-4 col-span-1 md:col-span-2 text-xs text-slate-400 flex justify-between">
+            <div>Device ID: <span id="meta-device" class="text-slate-200">--</span></div>
+            <div>Last Updated: <span id="meta-time" class="text-slate-200">--</span></div>
+        </div>
+
+    </main>
+
+    <script>
+        async function fetchLatestData() {
+            try {
+                const response = await fetch('/api/v1/scan/latest');
+                if (response.ok && response.status === 200) {
+                    const data = await response.json();
+                    updateUI(data);
+                    document.getElementById('status-text').textContent = 'Connected';
+                    document.getElementById('status-text').classList.replace('text-red-400', 'text-emerald-400');
+                }
+            } catch (error) {
+                console.error("Failed to fetch data", error);
+                document.getElementById('status-text').textContent = 'Disconnected';
+                document.getElementById('status-text').classList.replace('text-emerald-400', 'text-red-400');
+            }
+        }
+
+        function updateUI(data) {
+            // Update purity
+            const purityEl = document.getElementById('purity');
+            purityEl.textContent = data.purityPercentage.toFixed(2);
+            
+            // Color coding based on purity
+            if (data.purityPercentage > 90) {
+                purityEl.className = 'text-6xl font-bold text-emerald-400 tracking-tighter transition-all duration-300';
+            } else if (data.purityPercentage > 60) {
+                purityEl.className = 'text-6xl font-bold text-yellow-400 tracking-tighter transition-all duration-300';
+            } else {
+                purityEl.className = 'text-6xl font-bold text-red-400 tracking-tighter transition-all duration-300';
+            }
+
+            // Update optical bars (max assume 255)
+            document.getElementById('bar-r').style.width = `${(data.opticalR / 255) * 100}%`;
+            document.getElementById('val-r').textContent = data.opticalR;
+            
+            document.getElementById('bar-g').style.width = `${(data.opticalG / 255) * 100}%`;
+            document.getElementById('val-g').textContent = data.opticalG;
+            
+            document.getElementById('bar-b').style.width = `${(data.opticalB / 255) * 100}%`;
+            document.getElementById('val-b').textContent = data.opticalB;
+
+            // Update Conductivity Ring (max assume 500mV) CIRCUMFERENCE = 2 * pi * r = 2 * 3.14 * 60 = 377
+            const maxCond = 500;
+            const condRatio = Math.min(data.conductivityMv / maxCond, 1);
+            const dashoffset = 377 - (377 * condRatio);
+            document.getElementById('cond-ring').style.strokeDashoffset = dashoffset;
+            document.getElementById('cond-val').textContent = data.conductivityMv;
+
+            // Meta
+            document.getElementById('meta-device').textContent = data.deviceId;
+            document.getElementById('meta-time').textContent = new Date(data.timestamp).toLocaleTimeString();
+        }
+
+        // Poll every 500ms since edge blasts 5 payloads/sec
+        setInterval(fetchLatestData, 500);
+        fetchLatestData();
+    </script>
+</body>
+</html>

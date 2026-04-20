@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spectrometer_db
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+mqtt:
+  broker:
+    url: tcp://localhost:1883
+  client:
+    id: spring-boot-backend
+  topic: iot/spectrometer/raw
