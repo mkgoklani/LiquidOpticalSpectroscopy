@@ -6,6 +6,7 @@
   <title>Spectrometer AI Project Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;600;900&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -17,12 +18,20 @@
     }
     body {
       margin: 0;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: var(--bg-pure);
       color: white;
       font-family: 'Inter', sans-serif;
       cursor: none;
+      scroll-behavior: smooth;
     }
+    
+    /* Custom Scrollbar */
+    body::-webkit-scrollbar { width: 8px; }
+    body::-webkit-scrollbar-track { background: var(--bg-pure); }
+    body::-webkit-scrollbar-thumb { background: rgba(110, 0, 255, 0.5); border-radius: 4px; }
+    body::-webkit-scrollbar-thumb:hover { background: var(--ghost-purple); }
     
     /* Premium Fiery Custom Cursor */
     #custom-cursor {
@@ -244,8 +253,10 @@
 
   <div class="overlay" id="menu-overlay"></div>
 
-  <!-- Main Layout: Left Panel (Project Description) -->
-  <div id="left-panel" class="split-panel">
+  <!-- HERO SECTION (Main Split Layout) -->
+  <div id="hero-section" class="relative w-full h-screen">
+    <!-- Main Layout: Left Panel (Project Description) -->
+    <div id="left-panel" class="split-panel">
     <div class="opacity-0" id="project-info">
       <h1 class="description-title" style="font-size: 3.5rem;">LIQUID<br>SPECTROMETER</h1>
       <div class="glass-card">
@@ -311,6 +322,149 @@
 
   </div>
 
+  </div> <!-- End Hero Section -->
+
+  <!-- SCROLL DOWN INDICATOR -->
+  <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce z-50 pointer-events-none opacity-50">
+    <span class="text-xs tracking-[0.3em] text-purple-400 mb-2 uppercase">System Protocols</span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500"><polyline points="6 9 12 15 18 9"></polyline></svg>
+  </div>
+
+  <!-- CAUTIONS & PROCEDURES SECTION -->
+  <div id="cautions-section" class="relative w-full min-h-screen flex flex-col items-center justify-center p-12 overflow-hidden border-t border-purple-900/30">
+      
+      <!-- Background Glow Effect -->
+      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div class="z-10 text-center mb-16 caution-header">
+        <h2 class="font-sans font-black text-5xl tracking-tight text-white mb-4">STANDARD OPERATING PROCEDURES</h2>
+        <div class="h-1 w-32 bg-gradient-to-r from-purple-600 via-red-600 to-orange-500 rounded-full mx-auto"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl z-10 w-full pb-20">
+          
+          <div class="glass-card caution-card hover:-translate-y-2 transition-transform duration-300">
+             <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-white uppercase tracking-wider">1. Geometric Consistency</h3>
+             </div>
+             <p class="text-gray-400 leading-relaxed font-mono text-sm">
+               Every scan must use the exact same volume (e.g., 10ml syringe) and identical containers. Slight variations in depth drastically alter light absorption and skew AI inference.
+             </p>
+          </div>
+
+          <div class="glass-card caution-card hover:-translate-y-2 transition-transform duration-300">
+             <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4v.01"></path><path d="M5 19h14a2 2 0 0 0 1.84-2.75L13.74 4a2 2 0 0 0-3.5 0l-7.1 12.25A2 2 0 0 0 5 19z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-white uppercase tracking-wider">2. Thermal Stability</h3>
+             </div>
+             <p class="text-gray-400 leading-relaxed font-mono text-sm">
+               Liquid density changes with temperature, affecting optical scattering. Ensure training datasets and live presentation samples are stabilized at identical room temperatures before testing.
+             </p>
+          </div>
+
+          <div class="glass-card caution-card hover:-translate-y-2 transition-transform duration-300">
+             <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
+                <h3 class="text-lg font-bold text-white uppercase tracking-wider">3. "Blank" Calibration</h3>
+             </div>
+             <p class="text-gray-400 leading-relaxed font-mono text-sm">
+               The TCS3200 sensor reads ambient air and plastic. Always establish an absolute-zero baseline using 10ml of distilled water to mathematically remove environmental interference.
+             </p>
+          </div>
+
+          <div class="glass-card caution-card hover:-translate-y-2 transition-transform duration-300">
+             <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="6.5"></line></svg>
+                </div>
+                <h3 class="text-lg font-bold text-white uppercase tracking-wider">4. Homogenization Effect</h3>
+             </div>
+             <p class="text-gray-400 leading-relaxed font-mono text-sm">
+               Suspended particles in liquids sink or float over time. Always vigorously stir the main sample immediately before drawing it into the testing syringe to ensure a true representation.
+             </p>
+          </div>
+
+          <div class="glass-card caution-card hover:-translate-y-2 transition-transform duration-300 md:col-span-2 lg:col-span-1">
+             <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-white uppercase tracking-wider">5. Zero Contamination</h3>
+             </div>
+             <p class="text-gray-400 leading-relaxed font-mono text-sm">
+               A microscopic film of previous liquid will destroy dataset purity. The testing container must be thoroughly rinsed with water and wiped bone-dry between every single scan.
+             </p>
+          </div>
+
+      </div>
+  </div>
+
+  <!-- TEAM SECTION -->
+  <div id="team-section" class="relative w-full min-h-screen flex flex-col items-center justify-center p-12 overflow-hidden border-t border-purple-900/30">
+      
+      <div class="z-10 text-center mb-16 team-header">
+        <h2 class="font-sans font-black text-5xl tracking-tight text-white mb-4">ENGINEERING TEAM</h2>
+        <div class="h-1 w-32 bg-gradient-to-r from-purple-600 via-red-600 to-orange-500 rounded-full mx-auto"></div>
+        <p class="text-gray-400 font-mono mt-4 text-sm max-w-2xl mx-auto">Click any photo or name below to customize. Data is stored persistently in your local browser environment.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl z-10 w-full pb-20">
+          
+          <!-- Team Member 1 -->
+          <div class="glass-card team-card flex flex-col items-center p-8 relative group">
+              <div class="relative w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-purple-500/30 shadow-[0_0_30px_rgba(110,0,255,0.2)]">
+                  <img id="img-member-1" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzFhMWEyZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjFlbSIgZmlsbD0iIzZlMDBmZiIgZm9udC1zaXplPSI0MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjE8L3RleHQ+PC9zdmc+" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                  <label class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="mb-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      <span class="text-[10px] font-bold text-white uppercase tracking-widest">Upload Photo</span>
+                      <input type="file" accept="image/*" class="hidden" onchange="uploadPhoto(event, 1)">
+                  </label>
+              </div>
+              <input type="text" id="name-member-1" class="bg-transparent text-center text-2xl font-bold text-white uppercase tracking-wider mb-1 outline-none border-b border-transparent focus:border-purple-500/50 w-full transition-colors" value="TEAM MEMBER 1" onchange="saveText('name-member-1', this.value)">
+              <input type="text" id="roll-member-1" class="bg-transparent text-center text-xs font-mono text-gray-500 uppercase tracking-widest mb-2 outline-none border-b border-transparent focus:border-purple-500/50 w-full transition-colors" value="ROLL NUMBER" onchange="saveText('roll-member-1', this.value)">
+              <input type="text" id="role-member-1" class="bg-transparent text-center text-sm font-mono text-purple-400 outline-none border-b border-transparent focus:border-purple-500/50 w-full transition-colors" value="POSITION" onchange="saveText('role-member-1', this.value)">
+          </div>
+
+          <!-- Team Member 2 -->
+          <div class="glass-card team-card flex flex-col items-center p-8 relative group">
+              <div class="relative w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-red-500/30 shadow-[0_0_30px_rgba(255,26,26,0.2)]">
+                  <img id="img-member-2" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzFhMWEyZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjFlbSIgZmlsbD0iI2ZmMWExYSIgZm9udC1zaXplPSI0MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjI8L3RleHQ+PC9zdmc+" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                  <label class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="mb-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      <span class="text-[10px] font-bold text-white uppercase tracking-widest">Upload Photo</span>
+                      <input type="file" accept="image/*" class="hidden" onchange="uploadPhoto(event, 2)">
+                  </label>
+              </div>
+              <input type="text" id="name-member-2" class="bg-transparent text-center text-2xl font-bold text-white uppercase tracking-wider mb-1 outline-none border-b border-transparent focus:border-red-500/50 w-full transition-colors" value="TEAM MEMBER 2" onchange="saveText('name-member-2', this.value)">
+              <input type="text" id="roll-member-2" class="bg-transparent text-center text-xs font-mono text-gray-500 uppercase tracking-widest mb-2 outline-none border-b border-transparent focus:border-red-500/50 w-full transition-colors" value="ROLL NUMBER" onchange="saveText('roll-member-2', this.value)">
+              <input type="text" id="role-member-2" class="bg-transparent text-center text-sm font-mono text-red-400 outline-none border-b border-transparent focus:border-red-500/50 w-full transition-colors" value="POSITION" onchange="saveText('role-member-2', this.value)">
+          </div>
+
+          <!-- Team Member 3 -->
+          <div class="glass-card team-card flex flex-col items-center p-8 relative group">
+              <div class="relative w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-orange-500/30 shadow-[0_0_30px_rgba(255,85,0,0.2)]">
+                  <img id="img-member-3" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzFhMWEyZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjFlbSIgZmlsbD0iI2ZmNTUwMCIgZm9udC1zaXplPSI0MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjM8L3RleHQ+PC9zdmc+" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                  <label class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="mb-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      <span class="text-[10px] font-bold text-white uppercase tracking-widest">Upload Photo</span>
+                      <input type="file" accept="image/*" class="hidden" onchange="uploadPhoto(event, 3)">
+                  </label>
+              </div>
+              <input type="text" id="name-member-3" class="bg-transparent text-center text-2xl font-bold text-white uppercase tracking-wider mb-1 outline-none border-b border-transparent focus:border-orange-500/50 w-full transition-colors" value="TEAM MEMBER 3" onchange="saveText('name-member-3', this.value)">
+              <input type="text" id="roll-member-3" class="bg-transparent text-center text-xs font-mono text-gray-500 uppercase tracking-widest mb-2 outline-none border-b border-transparent focus:border-orange-500/50 w-full transition-colors" value="ROLL NUMBER" onchange="saveText('roll-member-3', this.value)">
+              <input type="text" id="role-member-3" class="bg-transparent text-center text-sm font-mono text-orange-400 outline-none border-b border-transparent focus:border-orange-500/50 w-full transition-colors" value="POSITION" onchange="saveText('role-member-3', this.value)">
+          </div>
+
+      </div>
+  </div>
+
   <script>
     // --- 1. FIERY CUSTOM CURSOR ---
     const cursor = document.getElementById('custom-cursor');
@@ -354,12 +508,128 @@
       overlay.classList.remove('active');
     });
 
-    // --- 2. GSAP REVEAL ---
+    // --- GSAP REVEAL & SCROLL TRIGGER ---
+    gsap.registerPlugin(ScrollTrigger);
+
     window.onload = () => {
+      // Hero Section Reveal
       gsap.to("#project-info", { opacity: 1, x: 20, duration: 1.5, ease: "power3.out", delay: 0.5 });
       gsap.to("#right-panel", { opacity: 1, duration: 1.5, ease: "power2.out" });
-      gsap.from(".glass-card", { opacity: 0, y: 30, duration: 1.2, stagger: 0.2, ease: "power3.out" });
+      gsap.from("#right-panel .glass-card", { opacity: 0, y: 30, duration: 1.2, stagger: 0.2, ease: "power3.out" });
+
+      // Cautions Section ScrollTrigger
+      gsap.from(".caution-header", {
+        scrollTrigger: {
+          trigger: "#cautions-section",
+          start: "top 80%",
+        },
+        opacity: 0,
+        y: -50,
+        duration: 1,
+        ease: "power3.out"
+      });
+
+      gsap.from(".caution-card", {
+        scrollTrigger: {
+          trigger: "#cautions-section",
+          start: "top 60%",
+        },
+        opacity: 0,
+        y: 50,
+        rotationX: -15,
+        duration: 1.2,
+        stagger: 0.15,
+        ease: "back.out(1.7)"
+      });
+
+      // Team Section ScrollTrigger
+      gsap.from(".team-header", {
+        scrollTrigger: {
+          trigger: "#team-section",
+          start: "top 80%",
+        },
+        opacity: 0,
+        scale: 0.9,
+        duration: 1,
+        ease: "power3.out"
+      });
+
+      gsap.from(".team-card", {
+        scrollTrigger: {
+          trigger: "#team-section",
+          start: "top 60%",
+        },
+        opacity: 0,
+        y: 50,
+        duration: 1.2,
+        stagger: 0.2,
+        ease: "power3.out"
+      });
     };
+
+    // --- LOCALSTORAGE TEAM DATA LOGIC ---
+    function saveText(id, value) {
+      localStorage.setItem(id, value);
+    }
+
+    function loadTeamData() {
+      // Load texts
+      ['name-member-1', 'roll-member-1', 'role-member-1', 
+       'name-member-2', 'roll-member-2', 'role-member-2', 
+       'name-member-3', 'roll-member-3', 'role-member-3'].forEach(id => {
+        const stored = localStorage.getItem(id);
+        if (stored) document.getElementById(id).value = stored;
+      });
+
+      // Load images
+      [1, 2, 3].forEach(id => {
+        const storedImg = localStorage.getItem('img-member-' + id);
+        if (storedImg) document.getElementById('img-member-' + id).src = storedImg;
+      });
+    }
+
+    function uploadPhoto(event, memberId) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        // Resize image to save localStorage quota
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          document.getElementById('img-member-' + memberId).src = dataUrl;
+          localStorage.setItem('img-member-' + memberId, dataUrl);
+        }
+        img.src = e.target.result;
+      }
+      reader.readAsDataURL(file);
+    }
+
+    // Load data on start
+    loadTeamData();
 
     // --- 3. DATA POLLING ---
     const valR = document.getElementById('val-r'), valG = document.getElementById('val-g'), valB = document.getElementById('val-b'), valCond = document.getElementById('val-cond');
@@ -377,30 +647,66 @@
     }
 
     function processScan(data) {
-      valR.innerHTML = data.r; valG.innerHTML = data.g; valB.innerHTML = data.b;
-      valCond.innerHTML = parseFloat(data.conductivity).toFixed(1);
-      scanHistory.push(data);
+      // Handle both real backend names and mock names
+      const r = data.opticalR !== undefined ? data.opticalR : data.r;
+      const g = data.opticalG !== undefined ? data.opticalG : data.g;
+      const b = data.opticalB !== undefined ? data.opticalB : data.b;
+      const cond = data.conductivityMv !== undefined ? data.conductivityMv : data.conductivity;
+      const purity = data.purityPercentage !== undefined ? data.purityPercentage : data.purity;
+
+      valR.innerHTML = r;
+      valG.innerHTML = g;
+      valB.innerHTML = b;
+      valCond.innerHTML = parseFloat(cond).toFixed(1);
+
+      scanHistory.push({ r, g, b, cond, purity });
       if (scanHistory.length > 10) scanHistory.shift();
+
       let sum = scanHistory.reduce((acc, curr) => ({
         r: acc.r + curr.r, g: acc.g + curr.g, b: acc.b + curr.b, 
-        cond: acc.cond + parseFloat(curr.conductivity),
+        cond: acc.cond + parseFloat(curr.cond),
         pur: acc.pur + curr.purity
       }), {r: 0, g: 0, b: 0, cond: 0, pur: 0});
+
       const len = scanHistory.length;
-      const avgR = Math.round(sum.r / len), avgG = Math.round(sum.g / len), avgB = Math.round(sum.b / len), avgCond = (sum.cond / len).toFixed(1), avgPur = Math.round(sum.pur / len);
-      avgRgbEl.innerText = `${avgR}, ${avgG}, ${avgB}`;
-      avgCondEl.innerText = avgCond;
-      liquidTypeEl.innerText = classifyLiquid(avgR, avgG, avgB, avgCond);
-      aiVerdictEl.innerText = `${avgPur}%`;
+      const avgR = Math.round(sum.r / len);
+      const avgG = Math.round(sum.g / len);
+      const avgB = Math.round(sum.b / len);
+      const avgCond = (sum.cond / len).toFixed(1);
+      const avgPur = Math.round(sum.pur / len);
+
+      if (avgR === 0 && avgG === 0 && avgB === 0) {
+        avgRgbEl.innerText = "ERR, ERR, ERR";
+        avgCondEl.innerText = "ERR";
+        liquidTypeEl.innerText = "SENSOR FAULT / DISCONNECTED";
+        liquidTypeEl.classList.add('text-red-500');
+        aiVerdictEl.innerText = "ERR%";
+      } else {
+        avgRgbEl.innerText = `${avgR}, ${avgG}, ${avgB}`;
+        avgCondEl.innerText = avgCond;
+        liquidTypeEl.innerText = classifyLiquid(avgR, avgG, avgB, avgCond);
+        liquidTypeEl.classList.remove('text-red-500');
+        aiVerdictEl.innerText = `${avgPur}%`;
+      }
     }
 
     setInterval(async () => {
       try {
         const response = await fetch('http://localhost:8080/api/v1/scan/latest');
-        if (response.ok) { processScan(await response.json()); }
+        if (response.status === 200) {
+          const data = await response.json();
+          if (data) {
+             processScan(data);
+             document.getElementById('liquid-type').classList.remove('text-red-500');
+          }
+        } else if (response.status === 204) {
+          // No content
+        }
       } catch (e) {
-        const base = Math.random() > 0.5 ? {r: 220, g: 40, b: 40} : {r: 40, g: 220, b: 40};
-        processScan({ r: base.r + Math.floor(Math.random() * 30 - 15), g: base.g + Math.floor(Math.random() * 30 - 15), b: base.b + Math.floor(Math.random() * 30 - 15), conductivity: (Math.random() * 200 + 300).toFixed(1), purity: Math.floor(Math.random() * 10 + 85) });
+        // Backend unreachable or offline
+        document.getElementById('liquid-type').innerText = "SYSTEM OFFLINE / NO DATA";
+        document.getElementById('liquid-type').classList.add('text-red-500');
+        document.getElementById('ai-verdict').innerText = "--%";
       }
     }, 1000); 
 

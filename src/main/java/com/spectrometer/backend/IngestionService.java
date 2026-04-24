@@ -19,22 +19,36 @@ public class IngestionService {
     public void processMessage(String payload) {
         try {
             SpectrometerDataDto dto = objectMapper.readValue(payload, SpectrometerDataDto.class);
+            processManual(dto);
+        } catch (Exception e) {
+            logger.error("Failed to process MQTT message", e);
+        }
+    }
+
+    public void processManual(SpectrometerDataDto dto) {
+        try {
             SpectrometerData data = new SpectrometerData();
-            data.setDeviceId(dto.deviceId);
-            data.setTimestamp(dto.timestamp);
+            data.setDeviceId(dto.deviceId != null ? dto.deviceId : "manual-input");
+            data.setTimestamp(dto.timestamp != null ? dto.timestamp : System.currentTimeMillis());
             data.setOpticalR(dto.opticalR);
             data.setOpticalG(dto.opticalG);
             data.setOpticalB(dto.opticalB);
             data.setConductivityMv(dto.conductivityMv);
             
             // Simulate purity calculation for MVP since AI module isn't connected yet
-            double purity = Math.max(0, 100 - (data.getConductivityMv() * 0.1) - (Math.abs(data.getOpticalR() - 150) * 0.1));
-            data.setPurityPercentage(Math.round(purity * 100.0) / 100.0);
+            // If all 0, it's a sensor fault
+            if (data.getOpticalR() == 0 && data.getOpticalG() == 0 && data.getOpticalB() == 0) {
+                 data.setPurityPercentage(0.0);
+                 logger.warn("Sensor Fault detected: optical values are all 0");
+            } else {
+                 double purity = Math.max(0, 100 - (data.getConductivityMv() * 0.1) - (Math.abs(data.getOpticalR() - 150) * 0.1));
+                 data.setPurityPercentage(Math.round(purity * 100.0) / 100.0);
+            }
             
             repository.save(data);
             logger.info("Saved data points to DB - Device: {}", data.getDeviceId());
         } catch (Exception e) {
-            logger.error("Failed to process MQTT message", e);
+            logger.error("Failed to process data", e);
         }
     }
 }

@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spectrometer AI Project Dashboard</title>
+  <title>AI Training Studio - Liquid Spectrometer</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;600;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-pure: #000000;
       --ghost-purple: #6e00ff;
-      --ghost-red: #ff1a1a;
       --fire-orange: #ff5500;
       --fire-yellow: #ffaa00;
     }
     body {
       margin: 0;
-      overflow: hidden;
+      overflow-x: hidden;
       background: var(--bg-pure);
       color: white;
       font-family: 'Inter', sans-serif;
@@ -54,78 +54,163 @@
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     .font-sans { font-family: 'Inter', sans-serif; }
 
-    /* Split Screen Setup */
-    .split-panel {
-      position: absolute;
-      top: 0;
+    /* Layout */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 400px 1fr;
       height: 100vh;
-      width: 50vw;
-      background: transparent;
-      z-index: 100;
-    }
-    #left-panel {
-      left: 0;
-      padding: 4rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      border-right: 1px solid rgba(110, 0, 255, 0.1);
-    }
-    #right-panel {
-      right: 0;
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      width: 100vw;
     }
 
-    /* Premium Purple-Black-Fire Glassmorphism */
+    .panel-left {
+      border-right: 1px solid rgba(110, 0, 255, 0.2);
+      padding: 6rem 2rem 2rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .panel-right {
+      padding: 6rem 3rem 2rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+
+    /* Premium Glassmorphism */
     .glass-card {
       background: rgba(5, 0, 10, 0.6);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
       border: 1px solid rgba(110, 0, 255, 0.3);
       position: relative;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 1), 0 0 15px rgba(110, 0, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    
+    .glass-input {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(110, 0, 255, 0.4);
+      color: white;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .glass-input:focus {
+      border-color: var(--fire-orange);
+      box-shadow: 0 0 15px rgba(255, 85, 0, 0.3);
+    }
+    .glass-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .glass-btn {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
       overflow: hidden;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 1), 0 0 15px rgba(110, 0, 255, 0.1);
-      border-radius: 20px;
-      padding: 2rem;
     }
     
-    .glass-card::before {
-      content: "";
-      position: absolute;
+    .btn-primary {
+      background: linear-gradient(90deg, rgba(110,0,255,0.8), rgba(255,85,0,0.8));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      box-shadow: 0 0 20px rgba(110, 0, 255, 0.4);
+    }
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 0 30px rgba(255, 85, 0, 0.6);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    .glass-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Side Menu Styles */
+    #sidebar {
+      position: fixed;
       top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 20px;
-      padding: 1px;
-      background: linear-gradient(135deg, rgba(110,0,255,0.4) 0%, rgba(255,26,26,0.2) 50%, rgba(255,85,0,0.3) 100%);
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events: none;
+      left: -320px;
+      width: 300px;
+      height: 100vh;
+      background: rgba(5, 0, 10, 0.98);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-right: 1px solid rgba(110, 0, 255, 0.4);
+      z-index: 10000;
+      transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 5rem 1.5rem;
+      box-shadow: 20px 0 50px rgba(0,0,0,0.9);
     }
-
-    .description-title {
-      font-size: 4.5rem;
-      font-weight: 900;
-      line-height: 1;
-      background: linear-gradient(to right, #fff, var(--ghost-purple), var(--fire-orange));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 2rem;
-    }
-
-    .description-text {
-      font-size: 1.25rem;
-      line-height: 1.6;
+    #sidebar.open { left: 0; }
+    .menu-item {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       color: rgba(255, 255, 255, 0.7);
-      max-width: 450px;
+      text-decoration: none;
     }
-    
+    .menu-item:hover {
+      background: rgba(110, 0, 255, 0.15);
+      border-color: rgba(110, 0, 255, 0.4);
+      color: white;
+      box-shadow: 0 0 20px rgba(110, 0, 255, 0.2);
+    }
+    #menu-toggle {
+      position: fixed;
+      top: 1.5rem;
+      left: 1.5rem;
+      z-index: 10001;
+      cursor: pointer;
+      padding: 0.8rem;
+      background: rgba(5, 0, 10, 0.6);
+      border: 1px solid rgba(110, 0, 255, 0.3);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    #menu-toggle:hover {
+      border-color: var(--ghost-purple);
+      box-shadow: 0 0 15px rgba(110, 0, 255, 0.4);
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .overlay.active { opacity: 1; pointer-events: auto; }
+
+    /* Typography */
     .hud-title {
       color: rgba(255, 255, 255, 0.5);
       text-transform: uppercase;
@@ -133,13 +218,27 @@
       font-size: 0.75rem;
       margin-bottom: 0.5rem;
     }
-    .hud-value {
-      font-size: 2.5rem;
-      color: white;
+    
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
     }
-    .text-glow-purple {
-      text-shadow: 0 0 15px var(--ghost-purple);
+    .status-inactive { background-color: #4b5563; box-shadow: 0 0 5px #4b5563; }
+    .status-active { background-color: var(--fire-orange); box-shadow: 0 0 15px var(--fire-orange); animation: pulse 1.5s infinite; }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 85, 0, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 85, 0, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 85, 0, 0); }
     }
+
+    /* Live Data Log Scrollbar */
+    #data-log::-webkit-scrollbar { width: 6px; }
+    #data-log::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+    #data-log::-webkit-scrollbar-thumb { background: rgba(110, 0, 255, 0.5); border-radius: 4px; }
 
   </style>
 </head>
@@ -148,71 +247,119 @@
   <!-- Fiery Cursor -->
   <div id="custom-cursor"></div>
 
-  <!-- Main Layout: Left Panel (Project Description) -->
-  <div id="left-panel" class="split-panel">
-    <div class="opacity-0" id="project-info">
-      <h1 class="description-title">QUANTUM<br>SPECTRA</h1>
-      <div class="glass-card">
-        <p class="description-text font-sans">
-          An advanced Edge-Computed Optical Spectroscopy system. This interface monitors live spectral telemetry to analyze liquid composition and purity through AI-driven neural vectors and real-time sensor fusion.
-        </p>
-        <div class="mt-6 flex gap-4">
-          <div class="px-3 py-1 rounded-full border border-purple-500/30 text-[10px] uppercase tracking-widest text-purple-400">Edge Node</div>
-          <div class="px-3 py-1 rounded-full border border-orange-500/30 text-[10px] uppercase tracking-widest text-orange-400">AI Verified</div>
-        </div>
-      </div>
-    </div>
+  <!-- Menu Toggle Icon -->
+  <div id="menu-toggle">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
   </div>
 
-  <!-- Main Layout: Right Panel (Live HUD & AI Conclusions) -->
-  <div id="right-panel" class="split-panel flex flex-col justify-center px-12 opacity-0">
+  <!-- Sidebar Menu -->
+  <div id="sidebar">
+    <div class="hud-title mb-8 px-2">Navigation</div>
+    <a href="index.html" class="menu-item">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Live Dashboard</span>
+    </a>
+    <a href="training.html" class="menu-item" style="background: rgba(110, 0, 255, 0.2); border-color: rgba(110,0,255,0.5);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+      <span class="text-white font-semibold">Train the AI Model</span>
+    </a>
+  </div>
+  <div class="overlay" id="menu-overlay"></div>
+
+  <!-- Main Layout -->
+  <div class="dashboard-container">
     
-    <div>
-      <h2 class="font-sans font-black text-4xl tracking-tight mb-2 text-white">LIVE TELEMETRY</h2>
-      <div class="h-1 w-24 bg-gradient-to-r from-purple-600 via-red-600 to-orange-500 mb-6 rounded-full"></div>
-    </div>
-
-    <!-- Data Cards -->
-    <div class="grid grid-cols-2 gap-4 mb-8">
-      <div class="glass-card" id="card-rgb">
-        <div class="hud-title font-sans">Optical RGB</div>
-        <div class="hud-value font-mono flex gap-4 text-xl">
-          <div><span class="text-red-500">R:</span> <span id="val-r">0</span></div>
-          <div><span class="text-green-500">G:</span> <span id="val-g">0</span></div>
-          <div><span class="text-blue-500">B:</span> <span id="val-b">0</span></div>
-        </div>
+    <!-- LEFT PANEL: Configuration -->
+    <div class="panel-left">
+      <div>
+        <h2 class="font-sans font-black text-3xl tracking-tight text-white mb-2">SESSION SETUP</h2>
+        <div class="h-1 w-16 bg-gradient-to-r from-purple-600 to-orange-500 rounded-full mb-6"></div>
       </div>
 
-      <div class="glass-card" id="card-cond">
-        <div class="hud-title font-sans">Conductivity</div>
-        <div class="hud-value font-mono text-2xl"><span id="val-cond">0.0</span> <span class="text-sm opacity-50">mV</span></div>
-      </div>
-    </div>
-
-    <div class="mt-4">
-      <h2 class="font-sans font-black text-4xl tracking-tight mb-2 text-gray-300">AI CONCLUSIONS</h2>
-      <div class="h-1 w-24 bg-gradient-to-r from-purple-900 to-black mb-6 rounded-full opacity-50"></div>
-    </div>
-
-    <!-- Conclusion Area -->
-    <div class="glass-card" id="card-ai">
-      <div class="flex justify-between mb-6 pb-4 border-b border-white border-opacity-10 text-sm font-mono text-gray-400">
-        <div>AVG RGB (10s): <span id="avg-rgb" class="text-white">0, 0, 0</span></div>
-        <div>AVG COND: <span id="avg-cond" class="text-white">0.0</span> mV</div>
-      </div>
-      
-      <div class="grid grid-cols-2 gap-4">
+      <div class="glass-card flex flex-col gap-5 gsap-reveal">
         <div>
-          <div class="hud-title font-sans">Detected Substance</div>
-          <div id="liquid-type" class="text-2xl font-black text-white">ANALYZING...</div>
+          <div class="hud-title">Target Liquid Profile</div>
+          <p class="text-sm text-gray-400 mb-3">Define the substance you are currently sampling. All readings taken during the active session will be tagged with this profile for the neural dataset.</p>
+          
+          <label class="block text-xs font-semibold text-purple-300 uppercase tracking-wider mb-1">Liquid Name</label>
+          <input type="text" id="liquid-name" class="glass-input mb-4" placeholder="e.g., Synthetic Blood, Pure Water...">
+          
+          <label class="block text-xs font-semibold text-purple-300 uppercase tracking-wider mb-1">Expected Purity (%)</label>
+          <input type="number" id="liquid-purity" class="glass-input" value="100" min="0" max="100">
         </div>
-        <div class="text-right">
-          <div class="hud-title font-sans">Purity Vector</div>
-          <div id="ai-verdict" class="font-mono text-4xl font-black text-purple-500 text-glow-purple">--%</div>
+
+        <button id="btn-toggle-session" class="glass-btn btn-primary mt-2">
+          Start Data Collection
+        </button>
+
+        <button id="btn-manual-scan" class="glass-btn btn-secondary" disabled>
+          Capture Manual Reading
+        </button>
+      </div>
+
+      <div class="glass-card mt-auto gsap-reveal" style="border-color: rgba(255, 85, 0, 0.4);">
+        <div class="hud-title text-orange-400">Model Deployment</div>
+        <p class="text-xs text-gray-400 mb-4">Once enough diverse data is gathered, initiate the training sequence to update the backend KNN classifiers and Neural Vectors.</p>
+        <button id="btn-train-ai" class="glass-btn btn-secondary border-orange-500/50 hover:bg-orange-500/20 text-orange-200">
+          Train AI Pipeline
+        </button>
+        <div id="training-status" class="mt-3 text-sm font-mono text-center hidden">
+          <span class="text-yellow-400 animate-pulse">Processing vectors...</span>
         </div>
       </div>
     </div>
 
+    <!-- RIGHT PANEL: Live Feedback -->
+    <div class="panel-right">
+      <div>
+        <h2 class="font-sans font-black text-3xl tracking-tight text-white mb-2">LIVE DATASET FEEDBACK</h2>
+        <div class="h-1 w-24 bg-gradient-to-r from-purple-900 to-black rounded-full opacity-50 mb-6"></div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="grid grid-cols-3 gap-4 gsap-reveal">
+        <div class="glass-card py-4">
+          <div class="hud-title">Session State</div>
+          <div class="text-xl font-bold mt-1 flex items-center">
+            <span id="status-dot" class="status-indicator status-inactive"></span>
+            <span id="status-text" class="text-gray-400">STANDBY</span>
+          </div>
+        </div>
+        <div class="glass-card py-4">
+          <div class="hud-title">Session Scans</div>
+          <div class="text-3xl font-mono font-bold mt-1 text-purple-400" id="session-count">0</div>
+        </div>
+        <div class="glass-card py-4">
+          <div class="hud-title">Total Dataset Size</div>
+          <div class="text-3xl font-mono font-bold mt-1 text-white" id="total-count">1,042</div>
+        </div>
+      </div>
+
+      <!-- Scatter Chart -->
+      <div class="glass-card flex-grow min-h-[300px] gsap-reveal relative">
+        <div class="hud-title absolute top-6 left-6">Optical Density vs Conductivity (Dataset Cluster)</div>
+        <div class="w-full h-full pt-8">
+          <canvas id="scatterChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Live Stream Log -->
+      <div class="glass-card h-48 flex flex-col gsap-reveal">
+        <div class="hud-title mb-2 flex justify-between">
+          <span>Ingestion Stream</span>
+          <span class="text-xs text-purple-400">Awaiting data...</span>
+        </div>
+        <div id="data-log" class="flex-grow overflow-y-auto space-y-2 pr-2 font-mono text-sm">
+          <!-- Log rows go here -->
+          <div class="text-gray-600 italic text-center mt-10">Configure session and start collection to view telemetry.</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <script>
@@ -243,55 +390,296 @@
     }
     animateCursor();
 
-    // --- 2. GSAP REVEAL ---
+    // --- SIDEBAR LOGIC ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('menu-overlay');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('active');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+    });
+
+    // --- GSAP REVEAL ---
     window.onload = () => {
-      gsap.to("#project-info", { opacity: 1, x: 20, duration: 1.5, ease: "power3.out", delay: 0.5 });
-      gsap.to("#right-panel", { opacity: 1, duration: 1.5, ease: "power2.out" });
-      gsap.from(".glass-card", { opacity: 0, y: 30, duration: 1.2, stagger: 0.2, ease: "power3.out" });
+      gsap.from(".gsap-reveal", { opacity: 0, y: 20, duration: 1, stagger: 0.15, ease: "power3.out", delay: 0.2 });
     };
 
-    // --- 3. DATA POLLING ---
-    const valR = document.getElementById('val-r'), valG = document.getElementById('val-g'), valB = document.getElementById('val-b'), valCond = document.getElementById('val-cond');
-    const avgRgbEl = document.getElementById('avg-rgb'), avgCondEl = document.getElementById('avg-cond'), liquidTypeEl = document.getElementById('liquid-type'), aiVerdictEl = document.getElementById('ai-verdict');
-    const scanHistory = [];
+    // --- APPLICATION LOGIC ---
+    let isSessionActive = false;
+    let sessionDataCount = 0;
+    let totalDataCount = 1042; // Base mock dataset size
+    let currentLiquidName = "";
+    let currentLiquidPurity = 100;
+    
+    // UI Elements
+    const btnToggle = document.getElementById('btn-toggle-session');
+    const btnManual = document.getElementById('btn-manual-scan');
+    const btnTrain = document.getElementById('btn-train-ai');
+    const inputName = document.getElementById('liquid-name');
+    const inputPurity = document.getElementById('liquid-purity');
+    
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const countSessionEl = document.getElementById('session-count');
+    const countTotalEl = document.getElementById('total-count');
+    const dataLog = document.getElementById('data-log');
 
-    function classifyLiquid(r, g, b, cond) {
-      if (r > 200 && g < 100 && b < 100) return "SYNTHETIC BLOOD";
-      if (g > 200 && r < 100 && b < 100) return "TOXIC COOLANT";
-      if (b > 200 && r < 100 && g < 100) return "REACTOR H2O";
-      if (cond > 450) return "HEAVY SALINE";
-      if (r > 150 && g > 150 && b < 100) return "BIO-ACID";
-      if (r < 50 && g < 50 && b < 50) return "DARK MATTER";
-      return "UNKNOWN AGENT";
+    // Chart.js Setup
+    const ctx = document.getElementById('scatterChart').getContext('2d');
+    Chart.defaults.color = 'rgba(255, 255, 255, 0.5)';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    const scatterChart = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Current Session Data',
+          data: [],
+          backgroundColor: '#ff5500',
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { 
+            title: { display: true, text: 'Optical Density (Avg RGB)' },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            min: 0, max: 255
+          },
+          y: { 
+            title: { display: true, text: 'Conductivity (mV)' },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            min: 0, max: 600
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const d = ctx.raw;
+                return `${d.label} | Purity: ${d.purity}% | RGB: ${d.r},${d.g},${d.b}`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Toggle Session
+    btnToggle.addEventListener('click', () => {
+      if (!isSessionActive) {
+        if (!inputName.value.trim()) {
+          alert("Please enter a Target Liquid Name before starting.");
+          return;
+        }
+        // Start Session
+        isSessionActive = true;
+        currentLiquidName = inputName.value.trim();
+        currentLiquidPurity = parseFloat(inputPurity.value) || 100;
+        
+        // Lock inputs
+        inputName.disabled = true;
+        inputPurity.disabled = true;
+        
+        // Update Buttons
+        btnToggle.textContent = "Stop Data Collection";
+        btnToggle.style.background = "linear-gradient(90deg, rgba(255,26,26,0.8), rgba(200,0,0,0.8))";
+        btnManual.disabled = false;
+        
+        // Update Status
+        statusDot.className = "status-indicator status-active";
+        statusText.textContent = "RECORDING";
+        statusText.className = "text-orange-400 font-bold";
+        
+        // Clear log placeholder if first time
+        if (sessionDataCount === 0) dataLog.innerHTML = "";
+
+      } else {
+        // Stop Session
+        isSessionActive = false;
+        
+        // Unlock inputs
+        inputName.disabled = false;
+        inputPurity.disabled = false;
+        
+        // Update Buttons
+        btnToggle.textContent = "Start Data Collection";
+        btnToggle.style.background = "linear-gradient(90deg, rgba(110,0,255,0.8), rgba(255,85,0,0.8))";
+        btnManual.disabled = true;
+        
+        // Update Status
+        statusDot.className = "status-indicator status-inactive";
+        statusText.textContent = "STANDBY";
+        statusText.className = "text-gray-400";
+      }
+    });
+
+    // Handle incoming data (simulated or real)
+    function appendDatasetEntry(data) {
+      if (!isSessionActive) return;
+
+      sessionDataCount++;
+      totalDataCount++;
+      
+      countSessionEl.textContent = sessionDataCount;
+      countTotalEl.textContent = totalDataCount.toLocaleString();
+
+      const avgRgb = Math.round((data.r + data.g + data.b) / 3);
+      
+      // Add to Chart
+      scatterChart.data.datasets[0].data.push({
+        x: avgRgb,
+        y: parseFloat(data.conductivity),
+        r: data.r, g: data.g, b: data.b,
+        purity: currentLiquidPurity,
+        label: currentLiquidName
+      });
+      scatterChart.update();
+
+      // Add to Log
+      const isFault = (data.r === 0 && data.g === 0 && data.b === 0);
+      const logEntry = document.createElement('div');
+      logEntry.className = `flex justify-between items-center p-2 rounded border text-xs ${isFault ? 'bg-red-900/30 border-red-500/50' : 'bg-white/5 border-white/10'}`;
+      
+      if (isFault) {
+          logEntry.innerHTML = `
+            <span class="text-red-400 font-bold w-full text-center">SENSOR FAULT / DISCONNECTED: Payload rejected by hardware interface</span>
+          `;
+      } else {
+          logEntry.innerHTML = `
+            <span class="text-purple-300 w-1/4 truncate">${currentLiquidName}</span>
+            <span class="text-orange-300 w-1/6">${currentLiquidPurity}%</span>
+            <span class="text-gray-400 w-1/3">RGB: ${data.r},${data.g},${data.b}</span>
+            <span class="text-white w-1/4 text-right">${parseFloat(data.conductivity).toFixed(1)} mV</span>
+          `;
+      }
+      
+      dataLog.prepend(logEntry);
+      
+      // Limit log rows to prevent DOM bloat
+      if (dataLog.children.length > 50) {
+        dataLog.removeChild(dataLog.lastChild);
+      }
     }
 
-    function processScan(data) {
-      valR.innerHTML = data.r; valG.innerHTML = data.g; valB.innerHTML = data.b;
-      valCond.innerHTML = parseFloat(data.conductivity).toFixed(1);
-      scanHistory.push(data);
-      if (scanHistory.length > 10) scanHistory.shift();
-      let sum = scanHistory.reduce((acc, curr) => ({
-        r: acc.r + curr.r, g: acc.g + curr.g, b: acc.b + curr.b, 
-        cond: acc.cond + parseFloat(curr.conductivity),
-        pur: acc.pur + curr.purity
-      }), {r: 0, g: 0, b: 0, cond: 0, pur: 0});
-      const len = scanHistory.length;
-      const avgR = Math.round(sum.r / len), avgG = Math.round(sum.g / len), avgB = Math.round(sum.b / len), avgCond = (sum.cond / len).toFixed(1), avgPur = Math.round(sum.pur / len);
-      avgRgbEl.innerText = `${avgR}, ${avgG}, ${avgB}`;
-      avgCondEl.innerText = avgCond;
-      liquidTypeEl.innerText = classifyLiquid(avgR, avgG, avgB, avgCond);
-      aiVerdictEl.innerText = `${avgPur}%`;
-    }
+    // Manual Scan Trigger connected to Backend
+    btnManual.addEventListener('click', async () => {
+      // Simulate reading or Sensor fault
+      // 10% chance to simulate a hardware disconnected / sensor fault for edge case testing
+      const isFault = Math.random() < 0.1;
+      
+      const base = Math.random() > 0.5 ? {r: 220, g: 40, b: 40} : {r: 40, g: 220, b: 40};
+      
+      const payload = isFault ? {
+        deviceId: "manual-input",
+        timestamp: Date.now(),
+        opticalR: 0, opticalG: 0, opticalB: 0,
+        conductivityMv: 0
+      } : {
+        deviceId: "manual-input",
+        timestamp: Date.now(),
+        opticalR: clamp(base.r + Math.floor(Math.random() * 30 - 15)),
+        opticalG: clamp(base.g + Math.floor(Math.random() * 30 - 15)),
+        opticalB: clamp(base.b + Math.floor(Math.random() * 30 - 15)),
+        conductivityMv: parseInt(Math.random() * 200 + 300)
+      };
 
+      try {
+        await fetch('http://localhost:8080/api/v1/scan/manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        // We do NOT call appendDatasetEntry directly anymore!
+        // The backend polling interval will pick it up automatically via /latest.
+      } catch (e) {
+        alert("Failed to send manual scan to backend. Is it running?");
+      }
+    });
+
+    function clamp(val) { return Math.min(255, Math.max(0, val)); }
+
+    // Backend Polling & Actual Fetch
+    let lastTimestamp = 0;
     setInterval(async () => {
+      if (!isSessionActive) return;
+      
       try {
         const response = await fetch('http://localhost:8080/api/v1/scan/latest');
-        if (response.ok) { processScan(await response.json()); }
+        if (response.status === 200) {
+          const data = await response.json();
+          // Assume the API provides a timestamp so we don't duplicate
+          if (data && data.timestamp && data.timestamp !== lastTimestamp) {
+            lastTimestamp = data.timestamp;
+            // Map real backend format
+            appendDatasetEntry({
+              r: data.opticalR !== undefined ? data.opticalR : data.r,
+              g: data.opticalG !== undefined ? data.opticalG : data.g,
+              b: data.opticalB !== undefined ? data.opticalB : data.b,
+              conductivity: data.conductivityMv !== undefined ? data.conductivityMv : data.conductivity,
+              purity: data.purityPercentage !== undefined ? data.purityPercentage : data.purity
+            });
+          }
+        } else if (response.status === 204) {
+          // No content available yet
+        }
       } catch (e) {
-        const base = Math.random() > 0.5 ? {r: 220, g: 40, b: 40} : {r: 40, g: 220, b: 40};
-        processScan({ r: base.r + Math.floor(Math.random() * 30 - 15), g: base.g + Math.floor(Math.random() * 30 - 15), b: base.b + Math.floor(Math.random() * 30 - 15), conductivity: (Math.random() * 200 + 300).toFixed(1), purity: Math.floor(Math.random() * 10 + 85) });
+        // Backend offline or unreachable
+        const statusUI = document.getElementById('training-status');
+        if(isSessionActive) {
+           statusUI.classList.remove('hidden');
+           statusUI.innerHTML = `<span class="text-red-500">Connection to spectrometer hardware lost. Please check connection.</span>`;
+        }
       }
-    }, 1000); 
+    }, 1000);
+
+    // AI Training Workflow mapped to Python Server
+    btnTrain.addEventListener('click', async () => {
+      if (sessionDataCount === 0) {
+        alert("Collect some data first before training the model.");
+        return;
+      }
+      
+      btnTrain.disabled = true;
+      const statusUI = document.getElementById('training-status');
+      statusUI.classList.remove('hidden');
+      statusUI.innerHTML = '<span class="text-yellow-400 animate-pulse">Computing geometric vectors & retraining KNN...</span>';
+      
+      try {
+        // Ping Python AI Server
+        const response = await fetch('http://localhost:5001/api/ai/train', { method: 'POST' });
+        
+        if (response.status === 200) {
+            const result = await response.json();
+            if (result.status === 'success') {
+                statusUI.innerHTML = `<span class="text-green-400">Model Updated Successfully!</span>`;
+            } else {
+                statusUI.innerHTML = `<span class="text-red-400">Training Failed: ${result.message || 'Unknown error'}</span>`;
+            }
+        } else {
+            statusUI.innerHTML = `<span class="text-red-400">Training Error: Server returned ${response.status}</span>`;
+        }
+      } catch(e) {
+        // Server unreachable
+        statusUI.innerHTML = `<span class="text-red-500 font-bold">ERROR: Cannot connect to AI Training Server on port 5001. Ensure Python backend is running.</span>`;
+      }
+
+      setTimeout(() => {
+        btnTrain.disabled = false;
+        statusUI.classList.add('hidden');
+      }, 4000);
+    });
 
   </script>
 </body>
