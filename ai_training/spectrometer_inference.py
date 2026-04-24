@@ -61,9 +61,21 @@ class SpectrometerInference:
     def git_push_model(self):
         """Add, commit and push model.joblib to the remote repository."""
         try:
-            log.info("[GIT] Staging model file...")
-            subprocess.run(["git", "-C", GIT_REPO_ROOT, "add", self.model_path],
+            log.info("[GIT] Staging model file (force-adding ignored file)...")
+            # -f is required because model.joblib is in .gitignore by default.
+            # The triple-gate UI is the intentional bypass mechanism.
+            subprocess.run(["git", "-C", GIT_REPO_ROOT, "add", "-f", self.model_path],
                            check=True, capture_output=True)
+
+            # Check if there is actually anything new to commit
+            diff = subprocess.run(
+                ["git", "-C", GIT_REPO_ROOT, "diff", "--cached", "--quiet"],
+                capture_output=True
+            )
+            if diff.returncode == 0:
+                log.warning("[GIT] model.joblib unchanged since last push. Nothing to commit.")
+                return True   # Not an error — model is already up-to-date
+
             subprocess.run(["git", "-C", GIT_REPO_ROOT, "commit",
                             "-m", "AI: Auto-update trained model weights [skip ci]"],
                            check=True, capture_output=True)
