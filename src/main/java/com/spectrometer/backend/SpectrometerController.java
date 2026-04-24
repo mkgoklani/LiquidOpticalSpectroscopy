@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/scan")
-@CrossOrigin(origins = "*") // Allow all origins for local dev
+// CORS is handled globally via AppConfig.corsConfigurer() — no @CrossOrigin needed here
 public class SpectrometerController {
 
     private static final Logger logger = LoggerFactory.getLogger(SpectrometerController.class);

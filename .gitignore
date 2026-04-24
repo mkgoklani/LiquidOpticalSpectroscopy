@@ -42,3 +42,7 @@ out/
 ai_training/model.joblib
 ai_training/__pycache__/
 ai_training/*.pyc
+
+### H2 File Database ###
+# Persistent H2 database files — local only, not for version control.
+data/

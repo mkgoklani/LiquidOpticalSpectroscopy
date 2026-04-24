@@ -1,12 +1,13 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:spectrometer_db
+    # File-mode H2: data survives server restarts (stored in ./data/spectrometer_db.mv.db)
+    url: jdbc:h2:file:./data/spectrometer_db;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
     username: sa
     password:
     driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update  # 'update' preserves existing rows; 'create-drop' wipes on restart
     show-sql: false
     open-in-view: false   # Disables the JPA open-in-view warning
   h2:
