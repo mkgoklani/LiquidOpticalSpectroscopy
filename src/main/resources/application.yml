@@ -1,14 +1,17 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/spectrometer_db
-    username: admin
-    password: password
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:spectrometer_db
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
 
 mqtt:
   broker:

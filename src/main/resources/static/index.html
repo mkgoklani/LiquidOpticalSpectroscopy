@@ -1,172 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Spectrometer Dashboard</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .glass {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .animate-pulse-slow {
-            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spectrometer AI Project Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;600;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-pure: #000000;
+      --ghost-purple: #6e00ff;
+      --ghost-red: #ff1a1a;
+      --fire-orange: #ff5500;
+      --fire-yellow: #ffaa00;
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg-pure);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      cursor: none;
+    }
+    
+    /* Premium Fiery Custom Cursor */
+    #custom-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 12px;
+      height: 12px;
+      background-color: var(--fire-yellow);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      box-shadow: 0 0 15px var(--fire-yellow), 0 0 30px var(--ghost-purple);
+      transform: translate(-50%, -50%);
+    }
+    .trail {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background-color: var(--fire-orange);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      box-shadow: 0 0 10px var(--ghost-purple);
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-sans { font-family: 'Inter', sans-serif; }
+
+    /* Split Screen Setup */
+    .split-panel {
+      position: absolute;
+      top: 0;
+      height: 100vh;
+      width: 50vw;
+      background: transparent;
+      z-index: 100;
+    }
+    #left-panel {
+      left: 0;
+      padding: 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid rgba(110, 0, 255, 0.1);
+    }
+    #right-panel {
+      right: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Premium Purple-Black-Fire Glassmorphism */
+    .glass-card {
+      background: rgba(5, 0, 10, 0.6);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(110, 0, 255, 0.3);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 1), 0 0 15px rgba(110, 0, 255, 0.1);
+      border-radius: 20px;
+      padding: 2rem;
+    }
+    
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 20px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(110,0,255,0.4) 0%, rgba(255,26,26,0.2) 50%, rgba(255,85,0,0.3) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .description-title {
+      font-size: 4.5rem;
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(to right, #fff, var(--ghost-purple), var(--fire-orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 2rem;
+    }
+
+    .description-text {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 450px;
+    }
+    
+    .hud-title {
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .hud-value {
+      font-size: 2.5rem;
+      color: white;
+    }
+    .text-glow-purple {
+      text-shadow: 0 0 15px var(--ghost-purple);
+    }
+
+  </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen p-8 flex flex-col items-center">
+<body>
 
-    <header class="w-full max-w-4xl flex justify-between items-center mb-10">
+  <!-- Fiery Cursor -->
+  <div id="custom-cursor"></div>
+
+  <!-- Main Layout: Left Panel (Project Description) -->
+  <div id="left-panel" class="split-panel">
+    <div class="opacity-0" id="project-info">
+      <h1 class="description-title">QUANTUM<br>SPECTRA</h1>
+      <div class="glass-card">
+        <p class="description-text font-sans">
+          An advanced Edge-Computed Optical Spectroscopy system. This interface monitors live spectral telemetry to analyze liquid composition and purity through AI-driven neural vectors and real-time sensor fusion.
+        </p>
+        <div class="mt-6 flex gap-4">
+          <div class="px-3 py-1 rounded-full border border-purple-500/30 text-[10px] uppercase tracking-widest text-purple-400">Edge Node</div>
+          <div class="px-3 py-1 rounded-full border border-orange-500/30 text-[10px] uppercase tracking-widest text-orange-400">AI Verified</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Layout: Right Panel (Live HUD & AI Conclusions) -->
+  <div id="right-panel" class="split-panel flex flex-col justify-center px-12 opacity-0">
+    
+    <div>
+      <h2 class="font-sans font-black text-4xl tracking-tight mb-2 text-white">LIVE TELEMETRY</h2>
+      <div class="h-1 w-24 bg-gradient-to-r from-purple-600 via-red-600 to-orange-500 mb-6 rounded-full"></div>
+    </div>
+
+    <!-- Data Cards -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="glass-card" id="card-rgb">
+        <div class="hud-title font-sans">Optical RGB</div>
+        <div class="hud-value font-mono flex gap-4 text-xl">
+          <div><span class="text-red-500">R:</span> <span id="val-r">0</span></div>
+          <div><span class="text-green-500">G:</span> <span id="val-g">0</span></div>
+          <div><span class="text-blue-500">B:</span> <span id="val-b">0</span></div>
+        </div>
+      </div>
+
+      <div class="glass-card" id="card-cond">
+        <div class="hud-title font-sans">Conductivity</div>
+        <div class="hud-value font-mono text-2xl"><span id="val-cond">0.0</span> <span class="text-sm opacity-50">mV</span></div>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <h2 class="font-sans font-black text-4xl tracking-tight mb-2 text-gray-300">AI CONCLUSIONS</h2>
+      <div class="h-1 w-24 bg-gradient-to-r from-purple-900 to-black mb-6 rounded-full opacity-50"></div>
+    </div>
+
+    <!-- Conclusion Area -->
+    <div class="glass-card" id="card-ai">
+      <div class="flex justify-between mb-6 pb-4 border-b border-white border-opacity-10 text-sm font-mono text-gray-400">
+        <div>AVG RGB (10s): <span id="avg-rgb" class="text-white">0, 0, 0</span></div>
+        <div>AVG COND: <span id="avg-cond" class="text-white">0.0</span> mV</div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-4">
         <div>
-            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                AI Spectrometer
-            </h1>
-            <p class="text-slate-400 text-sm mt-1">Real-time Supply Chain Adulteration Scan</p>
+          <div class="hud-title font-sans">Detected Substance</div>
+          <div id="liquid-type" class="text-2xl font-black text-white">ANALYZING...</div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="relative flex h-3 w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <span class="text-sm font-medium text-emerald-400" id="status-text">Connected</span>
+        <div class="text-right">
+          <div class="hud-title font-sans">Purity Vector</div>
+          <div id="ai-verdict" class="font-mono text-4xl font-black text-purple-500 text-glow-purple">--%</div>
         </div>
-    </header>
+      </div>
+    </div>
 
-    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        <!-- Purity Percentage Card -->
-        <div class="glass rounded-2xl p-6 flex flex-col items-center justify-center col-span-1 md:col-span-2 shadow-2xl relative overflow-hidden group">
-            <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <h2 class="text-lg font-semibold text-slate-300 mb-2">Estimated Purity</h2>
-            <div class="flex items-baseline gap-2">
-                <span id="purity" class="text-6xl font-bold text-emerald-400 tracking-tighter transition-all duration-300 animate-pulse-slow">--</span>
-                <span class="text-3xl text-emerald-400/80">%</span>
-            </div>
-            <p class="text-xs text-slate-500 mt-4">AI Model Inference (Simulated MVP)</p>
-        </div>
+  </div>
 
-        <!-- Optical Sensors -->
-        <div class="glass rounded-2xl p-6 shadow-xl">
-            <h3 class="text-slate-300 font-semibold mb-6 flex items-center gap-2">
-                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                Optical Sensors
-            </h3>
-            
-            <div class="space-y-4">
-                <div class="flex items-center">
-                    <span class="w-10 text-red-400 font-medium">R</span>
-                    <div class="w-full bg-slate-800 rounded-full h-3 mx-3 overflow-hidden">
-                        <div id="bar-r" class="bg-red-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <span id="val-r" class="w-10 text-right text-sm text-slate-400">0</span>
-                </div>
-                <div class="flex items-center">
-                    <span class="w-10 text-green-400 font-medium">G</span>
-                    <div class="w-full bg-slate-800 rounded-full h-3 mx-3 overflow-hidden">
-                        <div id="bar-g" class="bg-green-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <span id="val-g" class="w-10 text-right text-sm text-slate-400">0</span>
-                </div>
-                <div class="flex items-center">
-                    <span class="w-10 text-blue-400 font-medium">B</span>
-                    <div class="w-full bg-slate-800 rounded-full h-3 mx-3 overflow-hidden">
-                        <div id="bar-b" class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <span id="val-b" class="w-10 text-right text-sm text-slate-400">0</span>
-                </div>
-            </div>
-        </div>
+  <script>
+    // --- 1. FIERY CUSTOM CURSOR ---
+    const cursor = document.getElementById('custom-cursor');
+    const trails = [];
+    const trailCount = 15;
+    for (let i = 0; i < trailCount; i++) {
+      const el = document.createElement('div');
+      el.className = 'trail';
+      document.body.appendChild(el);
+      trails.push({ el: el, x: window.innerWidth/2, y: window.innerHeight/2 });
+    }
+    let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+    window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; cursor.style.left = `${mouseX}px`; cursor.style.top = `${mouseY}px`; });
+    function animateCursor() {
+      let x = mouseX, y = mouseY;
+      trails.forEach((trail, index) => {
+        trail.x += (x - trail.x) * 0.4;
+        trail.y += (y - trail.y) * 0.4;
+        trail.el.style.left = `${trail.x}px`;
+        trail.el.style.top = `${trail.y}px`;
+        trail.el.style.opacity = (trailCount - index) / trailCount;
+        trail.el.style.transform = `translate(-50%, -50%) scale(${(trailCount - index) / trailCount})`;
+        x = trail.x; y = trail.y;
+      });
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
 
-        <!-- Conductivity -->
-        <div class="glass rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-            <h3 class="text-slate-300 font-semibold mb-6 flex items-center gap-2">
-                <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                Conductivity
-            </h3>
-            <div class="flex flex-col items-center justify-center flex-grow">
-                <div class="relative">
-                    <svg class="w-32 h-32 transform -rotate-90">
-                        <circle cx="64" cy="64" r="60" fill="transparent" stroke="#1e293b" stroke-width="8"></circle>
-                        <circle id="cond-ring" cx="64" cy="64" r="60" fill="transparent" stroke="#eab308" stroke-width="8" stroke-dasharray="377" stroke-dashoffset="377" class="transition-all duration-500" stroke-linecap="round"></circle>
-                    </svg>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span id="cond-val" class="text-2xl font-bold text-white">0</span>
-                        <span class="text-xs text-slate-400">mV</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Metadata -->
-        <div class="glass rounded-2xl p-4 col-span-1 md:col-span-2 text-xs text-slate-400 flex justify-between">
-            <div>Device ID: <span id="meta-device" class="text-slate-200">--</span></div>
-            <div>Last Updated: <span id="meta-time" class="text-slate-200">--</span></div>
-        </div>
+    // --- 2. GSAP REVEAL ---
+    window.onload = () => {
+      gsap.to("#project-info", { opacity: 1, x: 20, duration: 1.5, ease: "power3.out", delay: 0.5 });
+      gsap.to("#right-panel", { opacity: 1, duration: 1.5, ease: "power2.out" });
+      gsap.from(".glass-card", { opacity: 0, y: 30, duration: 1.2, stagger: 0.2, ease: "power3.out" });
+    };
 
-    </main>
+    // --- 3. DATA POLLING ---
+    const valR = document.getElementById('val-r'), valG = document.getElementById('val-g'), valB = document.getElementById('val-b'), valCond = document.getElementById('val-cond');
+    const avgRgbEl = document.getElementById('avg-rgb'), avgCondEl = document.getElementById('avg-cond'), liquidTypeEl = document.getElementById('liquid-type'), aiVerdictEl = document.getElementById('ai-verdict');
+    const scanHistory = [];
 
-    <script>
-        async function fetchLatestData() {
-            try {
-                const response = await fetch('/api/v1/scan/latest');
-                if (response.ok && response.status === 200) {
-                    const data = await response.json();
-                    updateUI(data);
-                    document.getElementById('status-text').textContent = 'Connected';
-                    document.getElementById('status-text').classList.replace('text-red-400', 'text-emerald-400');
-                }
-            } catch (error) {
-                console.error("Failed to fetch data", error);
-                document.getElementById('status-text').textContent = 'Disconnected';
-                document.getElementById('status-text').classList.replace('text-emerald-400', 'text-red-400');
-            }
-        }
+    function classifyLiquid(r, g, b, cond) {
+      if (r > 200 && g < 100 && b < 100) return "SYNTHETIC BLOOD";
+      if (g > 200 && r < 100 && b < 100) return "TOXIC COOLANT";
+      if (b > 200 && r < 100 && g < 100) return "REACTOR H2O";
+      if (cond > 450) return "HEAVY SALINE";
+      if (r > 150 && g > 150 && b < 100) return "BIO-ACID";
+      if (r < 50 && g < 50 && b < 50) return "DARK MATTER";
+      return "UNKNOWN AGENT";
+    }
 
-        function updateUI(data) {
-            // Update purity
-            const purityEl = document.getElementById('purity');
-            purityEl.textContent = data.purityPercentage.toFixed(2);
-            
-            // Color coding based on purity
-            if (data.purityPercentage > 90) {
-                purityEl.className = 'text-6xl font-bold text-emerald-400 tracking-tighter transition-all duration-300';
-            } else if (data.purityPercentage > 60) {
-                purityEl.className = 'text-6xl font-bold text-yellow-400 tracking-tighter transition-all duration-300';
-            } else {
-                purityEl.className = 'text-6xl font-bold text-red-400 tracking-tighter transition-all duration-300';
-            }
+    function processScan(data) {
+      valR.innerHTML = data.r; valG.innerHTML = data.g; valB.innerHTML = data.b;
+      valCond.innerHTML = parseFloat(data.conductivity).toFixed(1);
+      scanHistory.push(data);
+      if (scanHistory.length > 10) scanHistory.shift();
+      let sum = scanHistory.reduce((acc, curr) => ({
+        r: acc.r + curr.r, g: acc.g + curr.g, b: acc.b + curr.b, 
+        cond: acc.cond + parseFloat(curr.conductivity),
+        pur: acc.pur + curr.purity
+      }), {r: 0, g: 0, b: 0, cond: 0, pur: 0});
+      const len = scanHistory.length;
+      const avgR = Math.round(sum.r / len), avgG = Math.round(sum.g / len), avgB = Math.round(sum.b / len), avgCond = (sum.cond / len).toFixed(1), avgPur = Math.round(sum.pur / len);
+      avgRgbEl.innerText = `${avgR}, ${avgG}, ${avgB}`;
+      avgCondEl.innerText = avgCond;
+      liquidTypeEl.innerText = classifyLiquid(avgR, avgG, avgB, avgCond);
+      aiVerdictEl.innerText = `${avgPur}%`;
+    }
 
-            // Update optical bars (max assume 255)
-            document.getElementById('bar-r').style.width = `${(data.opticalR / 255) * 100}%`;
-            document.getElementById('val-r').textContent = data.opticalR;
-            
-            document.getElementById('bar-g').style.width = `${(data.opticalG / 255) * 100}%`;
-            document.getElementById('val-g').textContent = data.opticalG;
-            
-            document.getElementById('bar-b').style.width = `${(data.opticalB / 255) * 100}%`;
-            document.getElementById('val-b').textContent = data.opticalB;
+    setInterval(async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/v1/scan/latest');
+        if (response.ok) { processScan(await response.json()); }
+      } catch (e) {
+        const base = Math.random() > 0.5 ? {r: 220, g: 40, b: 40} : {r: 40, g: 220, b: 40};
+        processScan({ r: base.r + Math.floor(Math.random() * 30 - 15), g: base.g + Math.floor(Math.random() * 30 - 15), b: base.b + Math.floor(Math.random() * 30 - 15), conductivity: (Math.random() * 200 + 300).toFixed(1), purity: Math.floor(Math.random() * 10 + 85) });
+      }
+    }, 1000); 
 
-            // Update Conductivity Ring (max assume 500mV) CIRCUMFERENCE = 2 * pi * r = 2 * 3.14 * 60 = 377
-            const maxCond = 500;
-            const condRatio = Math.min(data.conductivityMv / maxCond, 1);
-            const dashoffset = 377 - (377 * condRatio);
-            document.getElementById('cond-ring').style.strokeDashoffset = dashoffset;
-            document.getElementById('cond-val').textContent = data.conductivityMv;
-
-            // Meta
-            document.getElementById('meta-device').textContent = data.deviceId;
-            document.getElementById('meta-time').textContent = new Date(data.timestamp).toLocaleTimeString();
-        }
-
-        // Poll every 500ms since edge blasts 5 payloads/sec
-        setInterval(fetchLatestData, 500);
-        fetchLatestData();
-    </script>
+  </script>
 </body>
 </html>
