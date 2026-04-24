@@ -35,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Python / AI Server ###
+# model.joblib is managed by the triple-gate Git Sync feature in the AI server.
+# Do NOT commit it manually — use the Sync Model to Git button in training.html.
+ai_training/model.joblib
+ai_training/__pycache__/
+ai_training/*.pyc

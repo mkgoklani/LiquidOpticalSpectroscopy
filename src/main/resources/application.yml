@@ -2,20 +2,32 @@ spring:
   datasource:
     url: jdbc:h2:mem:spectrometer_db
     username: sa
-    password: 
+    password:
     driver-class-name: org.h2.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
-    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false   # Disables the JPA open-in-view warning
   h2:
     console:
       enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
 
 mqtt:
   broker:
-    url: tcp://localhost:1883
+    url: tcp://broker.emqx.io:1883
   client:
-    id: spring-boot-backend
+    id: ghost-rider-spectrometer
   topic: iot/spectrometer/raw
+
+ai:
+  server:
+    url: http://localhost:5001
+
+logging:
+  level:
+    com.spectrometer: DEBUG
+    org.springframework.integration.mqtt: WARN
