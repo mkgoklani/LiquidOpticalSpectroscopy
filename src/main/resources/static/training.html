@@ -320,6 +320,16 @@
              Status: Ready to Sync
            </div>
         </div>
+
+        <div class="h-[1px] w-full bg-white/10 mt-4 mb-4"></div>
+        <div class="hud-title text-sky-400">Dataset Sync to Git</div>
+        <p class="text-xs text-gray-500 mb-3">Exports real scans to CSV and pushes to the repository. On any new machine, data auto-imports on backend startup. Requires 3 confirmations.</p>
+        <button id="btn-dataset-sync" class="glass-btn bg-sky-600/20 text-sky-400 border-sky-500/30 hover:bg-sky-600/40">
+          Sync Dataset to Git
+        </button>
+        <div id="dataset-sync-status" class="mt-2 text-[10px] font-mono text-center text-gray-500 uppercase tracking-widest">
+          Status: Ready
+        </div>
       </div>
     </div>
 
@@ -343,9 +353,10 @@
           <div class="hud-title">Session Scans</div>
           <div class="text-3xl font-mono font-bold mt-1 text-purple-400" id="session-count">0</div>
         </div>
-        <div class="glass-card py-4">
-          <div class="hud-title">Total Dataset Size</div>
-          <div class="text-3xl font-mono font-bold mt-1 text-white" id="total-count">1,042</div>
+        <div class="glass-card py-4 border-emerald-500/30">
+          <div class="hud-title text-emerald-400">Real DB Scans</div>
+          <div class="text-3xl font-mono font-bold mt-1 text-emerald-400" id="total-count">—</div>
+          <div class="text-[9px] text-gray-600 uppercase tracking-widest mt-1">Excl. simulated</div>
         </div>
       </div>
 
@@ -594,11 +605,13 @@
       const payload = isFault ? {
         deviceId: "manual-input",
         timestamp: Date.now(),
+        isSimulated: true,
         opticalR: 0, opticalG: 0, opticalB: 0,
         conductivityMv: 0
       } : {
         deviceId: "manual-input",
         timestamp: Date.now(),
+        isSimulated: true,
         opticalR: clamp(base.r + Math.floor(Math.random() * 30 - 15)),
         opticalG: clamp(base.g + Math.floor(Math.random() * 30 - 15)),
         opticalB: clamp(base.b + Math.floor(Math.random() * 30 - 15)),
@@ -765,6 +778,68 @@
       });
     });
     observer.observe(document.getElementById('training-status'), { childList: true });
+
+    // --- DATASET SYNC TRIPLE-GATE ---
+    const btnDatasetSync   = document.getElementById('btn-dataset-sync');
+    const datasetSyncStatus = document.getElementById('dataset-sync-status');
+    let datasetConfirmCount = 0;
+
+    btnDatasetSync.addEventListener('click', async () => {
+      datasetConfirmCount++;
+
+      if (datasetConfirmCount === 1) {
+        btnDatasetSync.textContent = "Confirm Dataset Push (1/3)";
+        btnDatasetSync.classList.replace('bg-sky-600/20', 'bg-yellow-600/20');
+        btnDatasetSync.classList.replace('text-sky-400',  'text-yellow-400');
+        datasetSyncStatus.innerText = "Status: Awaiting second confirmation...";
+        return;
+      }
+      if (datasetConfirmCount === 2) {
+        btnDatasetSync.textContent = "FINAL CONFIRMATION (2/3)";
+        btnDatasetSync.classList.replace('bg-yellow-600/20', 'bg-red-600/20');
+        btnDatasetSync.classList.replace('text-yellow-400',  'text-red-400');
+        btnDatasetSync.classList.add('animate-pulse');
+        datasetSyncStatus.innerText = "Status: CRITICAL — One click will push all real scans to Git";
+        return;
+      }
+      if (datasetConfirmCount === 3) {
+        btnDatasetSync.disabled = true;
+        btnDatasetSync.classList.remove('animate-pulse');
+        btnDatasetSync.textContent = "EXPORTING & PUSHING...";
+        datasetSyncStatus.innerText = "Status: Exporting CSV and pushing to origin/main...";
+        try {
+          const response = await fetch('http://localhost:5001/api/ai/git-sync-dataset', { method: 'POST' });
+          const result   = await response.json();
+          if (response.ok) {
+            datasetSyncStatus.innerText = "Status: SUCCESS — Dataset CSV in Git. Pull on any machine to get it.";
+            btnDatasetSync.textContent = "DATASET SYNCED ✓";
+            btnDatasetSync.classList.replace('bg-red-600/20', 'bg-sky-600/40');
+            btnDatasetSync.classList.replace('text-red-400',  'text-sky-400');
+          } else {
+            throw new Error(result.message || "Push failed");
+          }
+        } catch (e) {
+          datasetSyncStatus.innerText = `Status: ERROR — ${e.message}`;
+          btnDatasetSync.disabled = false;
+          btnDatasetSync.textContent = "RETRY DATASET SYNC";
+          datasetConfirmCount = 0;
+        }
+      }
+    });
+
+    // --- LIVE REAL SCAN COUNT (polls /count/real every 5s) ---
+    const totalCountEl = document.getElementById('total-count');
+    async function refreshRealCount() {
+      try {
+        const res = await fetch('http://localhost:8080/api/v1/scan/count/real');
+        if (res.ok) {
+          const data = await res.json();
+          totalCountEl.textContent = data.count.toLocaleString();
+        }
+      } catch (e) { totalCountEl.textContent = '—'; }
+    }
+    refreshRealCount();
+    setInterval(refreshRealCount, 5000);
 
   </script>
 </body>

@@ -9,9 +9,10 @@ log = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-engine        = SpectrometerInference()
-trained       = False
-confirmations = 0   # Triple-gate counter for Git sync
+engine             = SpectrometerInference()
+trained            = False
+confirmations      = 0   # Triple-gate counter for model Git sync
+dataset_confirmations = 0  # Separate triple-gate for dataset Git sync
 
 # Try to restore a previously saved model on startup
 if engine.load_model():
@@ -31,7 +32,8 @@ def index():
         'endpoints': [
             'POST /api/ai/train',
             'POST /api/ai/predict',
-            'POST /api/ai/git-sync',
+            'POST /api/ai/git-sync          (model — 3 confirmations)',
+            'POST /api/ai/git-sync-dataset  (dataset CSV — 3 confirmations)',
             'GET  /api/ai/status',
         ]
     })
@@ -120,6 +122,35 @@ def git_sync():
             'status':  'error',
             'message': 'Git push failed. Check server logs for details.'
         }), 500
+
+
+@app.route('/api/ai/git-sync-dataset', methods=['POST'])
+def git_sync_dataset():
+    """
+    Triple-gate endpoint for pushing the real scan dataset CSV to Git.
+    Must be called 3 times to trigger the actual push.
+    No model training required — works independently of the model sync.
+    """
+    global dataset_confirmations
+    dataset_confirmations += 1
+    log.info("Dataset Git sync confirmation %d/3 received.", dataset_confirmations)
+
+    if dataset_confirmations < 3:
+        return jsonify({
+            'status':  'pending',
+            'count':   dataset_confirmations,
+            'message': f'Dataset confirmation {dataset_confirmations}/3. Call again to continue.'
+        }), 202
+
+    success               = engine.git_push_dataset()
+    dataset_confirmations = 0  # Reset regardless of outcome
+
+    if success:
+        return jsonify({'status': 'success',
+                        'message': 'Real scan dataset pushed to origin/main.'}), 200
+    else:
+        return jsonify({'status': 'error',
+                        'message': 'Dataset Git push failed. Check server logs.'}), 500
 
 
 @app.route('/api/ai/status', methods=['GET'])

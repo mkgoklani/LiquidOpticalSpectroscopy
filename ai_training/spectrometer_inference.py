@@ -13,9 +13,10 @@ from sklearn.preprocessing import StandardScaler
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 log = logging.getLogger(__name__)
 
-BACKEND_URL = os.environ.get('BACKEND_URL', 'http://localhost:8080')
-HISTORY_ENDPOINT = f'{BACKEND_URL}/api/v1/scan/history'
-LATEST_ENDPOINT  = f'{BACKEND_URL}/api/v1/scan/latest'
+BACKEND_URL     = os.environ.get('BACKEND_URL', 'http://localhost:8080')
+HISTORY_REAL    = f'{BACKEND_URL}/api/v1/scan/history/real'  # Real scans ONLY — no simulated data
+LATEST_ENDPOINT = f'{BACKEND_URL}/api/v1/scan/latest'
+EXPORT_ENDPOINT = f'{BACKEND_URL}/api/v1/scan/export'       # Writes CSV to dataset/training_data.csv
 POLL_INTERVAL_SECONDS = 1.0
 GIT_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -58,6 +59,45 @@ class SpectrometerInference:
             log.error("Failed to load model: %s", e)
             return False
 
+    def git_push_dataset(self):
+        """Tell Java to export the CSV, then commit and push it to Git."""
+        try:
+            log.info("[GIT] Requesting Java backend to export real scan CSV...")
+            resp = requests.get(EXPORT_ENDPOINT, timeout=15)
+            resp.raise_for_status()
+            result = resp.json()
+            if result.get('count', 0) == 0:
+                log.warning("[GIT] No real scans to export. Aborting dataset sync.")
+                return False
+
+            csv_path = os.path.join(GIT_REPO_ROOT, 'dataset', 'training_data.csv')
+            log.info("[GIT] Staging dataset CSV (%d scans)...", result['count'])
+            subprocess.run(["git", "-C", GIT_REPO_ROOT, "add", csv_path],
+                           check=True, capture_output=True)
+
+            diff = subprocess.run(
+                ["git", "-C", GIT_REPO_ROOT, "diff", "--cached", "--quiet"],
+                capture_output=True
+            )
+            if diff.returncode == 0:
+                log.warning("[GIT] Dataset CSV unchanged. Nothing to commit.")
+                return True
+
+            subprocess.run(["git", "-C", GIT_REPO_ROOT, "commit",
+                            "-m", f"data: Export {result['count']} real scans [skip ci]"],
+                           check=True, capture_output=True)
+            subprocess.run(["git", "-C", GIT_REPO_ROOT, "push", "origin", "main"],
+                           check=True, capture_output=True)
+            log.info("[GIT] Dataset (%d scans) pushed to origin/main.", result['count'])
+            return True
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip() if e.stderr else ''
+            log.error("[GIT] Dataset push failed: %s | %s", e.cmd, stderr)
+            return False
+        except Exception as e:
+            log.error("[GIT] Unexpected error during dataset push: %s", e)
+            return False
+
     def git_push_model(self):
         """Add, commit and push model.joblib to the remote repository."""
         try:
@@ -95,9 +135,11 @@ class SpectrometerInference:
     # Data fetching
     # ------------------------------------------------------------------
     def fetch_history(self):
-        """Fetch historical scan records from the Java backend."""
-        log.info("Fetching history from backend...")
-        response = requests.get(HISTORY_ENDPOINT, timeout=5)
+        """Fetch REAL (non-simulated) scan records from the Java backend."""
+        log.info("Fetching real scan history from backend...")
+        response = requests.get(HISTORY_REAL, timeout=5)
+        if response.status_code == 204:
+            return pd.DataFrame()  # No real data yet
         response.raise_for_status()
         data = response.json()
         if not data:

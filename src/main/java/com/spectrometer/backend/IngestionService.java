@@ -1,10 +1,12 @@
 package com.spectrometer.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Set;
 
 @Service
 public class IngestionService {
@@ -16,15 +18,18 @@ public class IngestionService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Hardware Lockout: tracks the last time real hardware sent data (epoch ms)
+    // Hardware Lockout: timestamp of last real MQTT hardware message
     private volatile long lastHardwareTimestamp = 0;
-
-    // How long (ms) to hold the lockout after the last real hardware message
     private static final long HARDWARE_LOCKOUT_WINDOW_MS = 10_000;
 
-    /**
-     * Called by MQTT inbound. Tags the payload as real hardware and processes it.
-     */
+    // Device IDs that are always treated as simulated, regardless of isSimulated flag
+    private static final Set<String> SIMULATED_DEVICE_PATTERNS = Set.of(
+        "manual-input", "simulated", "colorimeter-input", "demo", "test"
+    );
+
+    // ------------------------------------------------------------------
+    // Public API — called by MqttConfig (real hardware)
+    // ------------------------------------------------------------------
     public void processMessage(String payload) {
         if (payload == null || payload.isBlank()) {
             logger.warn("Received empty MQTT payload. Ignoring.");
@@ -33,8 +38,9 @@ public class IngestionService {
         try {
             lastHardwareTimestamp = System.currentTimeMillis();
             SpectrometerDataDto dto = objectMapper.readValue(payload, SpectrometerDataDto.class);
-            dto.deviceId = "hardware-mqtt-node";
-            processInternal(dto, false);
+            dto.deviceId   = "hardware-mqtt-node";
+            dto.isSimulated = false; // Real hardware data is NEVER simulated
+            processInternal(dto);
         } catch (com.fasterxml.jackson.core.JsonParseException e) {
             logger.error("Malformed MQTT JSON payload: {}", payload, e);
         } catch (Exception e) {
@@ -42,41 +48,44 @@ public class IngestionService {
         }
     }
 
-    /**
-     * Called by REST controller for manual/simulated scans.
-     * Throws IllegalStateException with code HARDWARE_ACTIVE_LOCKOUT if real hardware is streaming.
-     */
+    // ------------------------------------------------------------------
+    // Public API — called by REST controller (manual / simulated)
+    // ------------------------------------------------------------------
     public void processManual(SpectrometerDataDto dto) {
-        String reqDeviceId = (dto.deviceId != null) ? dto.deviceId : "manual-input";
+        String deviceId = (dto.deviceId != null) ? dto.deviceId : "manual-input";
 
-        boolean isSimulation = reqDeviceId.contains("manual")
-                || reqDeviceId.contains("simulated")
-                || reqDeviceId.contains("colorimeter");
+        // Check if this is a simulated device by name pattern
+        boolean isSimDevice = SIMULATED_DEVICE_PATTERNS.stream()
+                .anyMatch(pattern -> deviceId.toLowerCase().contains(pattern));
 
-        if (isSimulation && (System.currentTimeMillis() - lastHardwareTimestamp < HARDWARE_LOCKOUT_WINDOW_MS)) {
-            logger.warn("Hardware lockout active. Rejecting simulated payload from device: {}", reqDeviceId);
+        // Explicit flag OR device pattern match → simulated
+        boolean isSimulated = Boolean.TRUE.equals(dto.isSimulated) || isSimDevice;
+
+        // Hardware lockout: block simulated reads within 10s of real hardware data
+        if (isSimulated && (System.currentTimeMillis() - lastHardwareTimestamp < HARDWARE_LOCKOUT_WINDOW_MS)) {
+            logger.warn("Hardware lockout active. Rejecting simulated payload from device: {}", deviceId);
             throw new IllegalStateException("HARDWARE_ACTIVE_LOCKOUT");
         }
 
-        processInternal(dto, true);
+        dto.isSimulated = isSimulated;
+        processInternal(dto);
     }
 
-    /**
-     * Core processing logic shared by both MQTT and manual ingestion paths.
-     */
-    private void processInternal(SpectrometerDataDto dto, boolean isManual) {
-        // Input validation — reject clearly invalid payloads
+    // ------------------------------------------------------------------
+    // Core processing logic — shared by both paths
+    // ------------------------------------------------------------------
+    private void processInternal(SpectrometerDataDto dto) {
+        // Null safety + clamping
         if (dto.opticalR == null) dto.opticalR = 0;
         if (dto.opticalG == null) dto.opticalG = 0;
         if (dto.opticalB == null) dto.opticalB = 0;
         if (dto.conductivityMv == null) dto.conductivityMv = 0;
-
-        // Clamp to 0–255 for optical values
-        dto.opticalR = clamp(dto.opticalR, 0, 255);
-        dto.opticalG = clamp(dto.opticalG, 0, 255);
-        dto.opticalB = clamp(dto.opticalB, 0, 255);
-        // Clamp conductivity to a realistic range (0–2000 mV)
+        dto.opticalR       = clamp(dto.opticalR, 0, 255);
+        dto.opticalG       = clamp(dto.opticalG, 0, 255);
+        dto.opticalB       = clamp(dto.opticalB, 0, 255);
         dto.conductivityMv = clamp(dto.conductivityMv, 0, 2000);
+
+        boolean isSimulated = Boolean.TRUE.equals(dto.isSimulated);
 
         try {
             SpectrometerData data = new SpectrometerData();
@@ -86,11 +95,12 @@ public class IngestionService {
             data.setOpticalG(dto.opticalG);
             data.setOpticalB(dto.opticalB);
             data.setConductivityMv(dto.conductivityMv);
+            data.setIsSimulated(isSimulated);
 
-            // Purity calculation: sensor fault = 0%, otherwise physics-based estimate
+            // Purity: sensor fault = 0%, otherwise physics-based estimate
             if (dto.opticalR == 0 && dto.opticalG == 0 && dto.opticalB == 0) {
                 data.setPurityPercentage(0.0);
-                logger.warn("Sensor fault detected: all optical values are zero. Device: {}", data.getDeviceId());
+                logger.warn("Sensor fault (all zeros) — Device: {} | Simulated: {}", data.getDeviceId(), isSimulated);
             } else {
                 double purity = 100
                         - (dto.conductivityMv * 0.1)
@@ -98,12 +108,12 @@ public class IngestionService {
                 data.setPurityPercentage(Math.round(Math.max(0, Math.min(100, purity)) * 100.0) / 100.0);
             }
 
-            // HEX transpiler for the Digital Eyedropper module
             data.setHexCode(rgbToHex(data.getOpticalR(), data.getOpticalG(), data.getOpticalB()));
 
             repository.save(data);
-            logger.info("[{}] Saved scan — Device: {} | HEX: {} | Purity: {}%",
-                    isManual ? "MANUAL" : "MQTT",
+            logger.info("[{}{}] Device: {} | HEX: {} | Purity: {}%",
+                    isSimulated ? "SIM" : "REAL",
+                    isSimulated ? " ⚠" : " ✓",
                     data.getDeviceId(), data.getHexCode(), data.getPurityPercentage());
 
         } catch (Exception e) {
@@ -117,8 +127,6 @@ public class IngestionService {
 
     private String rgbToHex(int r, int g, int b) {
         return String.format("#%02X%02X%02X",
-                clamp(r, 0, 255),
-                clamp(g, 0, 255),
-                clamp(b, 0, 255));
+                clamp(r, 0, 255), clamp(g, 0, 255), clamp(b, 0, 255));
     }
 }
