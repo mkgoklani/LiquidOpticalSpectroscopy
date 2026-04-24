@@ -1,6 +1,6 @@
 <div align="center">
 
-# 👻 Ghost Rider — Liquid Optical Spectrometer
+# Liquid Optical Spectrometer
 
 **A full-stack IoT platform for real-time liquid purity detection using optical spectroscopy and AI-driven inference.**
 
