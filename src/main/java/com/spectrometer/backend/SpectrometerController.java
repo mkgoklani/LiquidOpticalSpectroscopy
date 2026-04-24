@@ -22,9 +22,15 @@ public class SpectrometerController {
 
     @PostMapping("/manual")
     public ResponseEntity<String> saveManualScan(@RequestBody SpectrometerDataDto dto) {
-        // We reuse the process logic but directly pass the DTO
-        ingestionService.processManual(dto);
-        return ResponseEntity.ok("Manual scan saved");
+        try {
+            ingestionService.processManual(dto);
+            return ResponseEntity.ok("Manual scan saved");
+        } catch (IllegalStateException e) {
+            if ("HARDWARE_ACTIVE_LOCKOUT".equals(e.getMessage())) {
+                return ResponseEntity.status(423).body("HARDWARE_ACTIVE_LOCKOUT");
+            }
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @GetMapping("/latest")

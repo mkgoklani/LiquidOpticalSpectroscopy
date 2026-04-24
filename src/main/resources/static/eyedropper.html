@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Eyedropper - Bonus Module</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;600;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-pure: #000000;
+      --ghost-purple: #6e00ff;
+      --fire-orange: #ff5500;
+    }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--bg-pure);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      cursor: none;
+    }
+    
+    /* Premium Fiery Custom Cursor */
+    #custom-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 12px;
+      height: 12px;
+      background-color: var(--fire-orange);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      box-shadow: 0 0 15px var(--fire-orange), 0 0 30px var(--ghost-purple);
+      transform: translate(-50%, -50%);
+    }
+
+    .glass-card {
+      background: rgba(5, 0, 10, 0.6);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(110, 0, 255, 0.3);
+      position: relative;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 1), 0 0 15px rgba(110, 0, 255, 0.05);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    /* Live Color Display */
+    #color-stage {
+      transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+    }
+    
+    .hud-title {
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    #back-btn {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      z-index: 10001;
+      cursor: pointer;
+      padding: 0.8rem;
+      background: rgba(5, 0, 10, 0.6);
+      border: 1px solid rgba(110, 0, 255, 0.3);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #back-btn:hover {
+      border-color: var(--ghost-purple);
+      box-shadow: 0 0 15px rgba(110, 0, 255, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fiery Cursor -->
+  <div id="custom-cursor"></div>
+
+  <!-- Back to Main -->
+  <a id="back-btn" href="index.html">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+      <line x1="19" y1="12" x2="5" y2="12"></line>
+      <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    <span class="text-sm font-bold tracking-widest uppercase">Return</span>
+  </a>
+
+  <div class="min-h-screen w-full flex flex-col md:flex-row p-12 pt-24 gap-8">
+    
+    <!-- LEFT PANEL: Live Colorimetry -->
+    <div class="flex-1 flex flex-col gap-6 w-full max-w-2xl mx-auto gsap-reveal">
+      
+      <div>
+        <h2 class="font-sans font-black text-4xl tracking-tight text-white mb-2 uppercase">Integrated Digital Eyedropper</h2>
+        <div class="h-1 w-32 bg-gradient-to-r from-purple-600 to-orange-500 rounded-full mb-6"></div>
+      </div>
+
+      <div class="glass-card flex flex-col items-center justify-center min-h-[350px] relative overflow-hidden">
+        <div class="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900 via-black to-black"></div>
+        
+        <!-- Physical Object Simulation Stage -->
+        <div id="color-stage" class="w-48 h-48 rounded-full border-4 border-white/20 mb-8 z-10 flex items-center justify-center relative bg-black">
+           <div class="absolute inset-0 rounded-full border-2 border-purple-500/50 animate-ping opacity-20"></div>
+        </div>
+
+        <div class="z-10 text-center w-full">
+          <div class="hud-title">Transpiled Base-16 HEX</div>
+          <div id="hex-code" class="text-5xl font-mono font-bold text-white mb-2 tracking-widest text-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+            AWAITING...
+          </div>
+          <div id="color-name" class="text-xl font-bold text-orange-400 uppercase tracking-widest mt-4">
+            CALIBRATING STAGE
+          </div>
+        </div>
+
+        <button id="btn-scan-color" class="mt-8 px-8 py-3 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/50 hover:bg-orange-500/40 hover:text-white transition-colors font-bold tracking-widest uppercase z-10 w-full max-w-[250px] shadow-[0_0_15px_rgba(255,85,0,0.2)]">
+          Simulate Hardware Scan
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="glass-card text-center py-6">
+          <div class="hud-title text-red-400">Optical R</div>
+          <div id="val-r" class="text-3xl font-mono font-bold">--</div>
+        </div>
+        <div class="glass-card text-center py-6">
+          <div class="hud-title text-green-400">Optical G</div>
+          <div id="val-g" class="text-3xl font-mono font-bold">--</div>
+        </div>
+        <div class="glass-card text-center py-6">
+          <div class="hud-title text-blue-400">Optical B</div>
+          <div id="val-b" class="text-3xl font-mono font-bold">--</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: Mechanism Explanation -->
+    <div class="w-full md:w-[500px] flex flex-col gap-6 gsap-reveal">
+      <div class="glass-card h-full overflow-y-auto border-orange-500/30 bg-orange-900/10">
+        <h3 class="text-2xl font-black text-orange-400 uppercase tracking-wide mb-6">How It Works</h3>
+        
+        <div class="space-y-8">
+          
+          <div>
+            <h4 class="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">1</span>
+              The Geometry Swap
+            </h4>
+            <p class="text-gray-400 text-sm font-mono leading-relaxed">
+              When switched to this mode, the main white LED shoots light down onto a physical colored object placed on the Petri dish stage. The light bounces off the object, travels straight up, and hits the TCS3200 sensor hovering in the lid.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">2</span>
+              Data Normalization
+            </h4>
+            <p class="text-gray-400 text-sm font-mono leading-relaxed">
+              The raw sensor DEC values are intercepted by our backend algorithm. A scaling function <code class="bg-black/50 px-1 py-0.5 rounded text-orange-300">val = (raw / max) * 255</code> normalizes the inputs into the perfect 0–255 integer range standard for digital RGB displays.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">3</span>
+              Base-16 Transpiler
+            </h4>
+            <p class="text-gray-400 text-sm font-mono leading-relaxed">
+              The backend architecture executes an instant transpilation of the three normalized integers into a standard 6-digit hexadecimal string prefixed with a '#'. This allows frictionless color-matching for CSS and HTML.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">4</span>
+              Calibration Database
+            </h4>
+            <p class="text-gray-400 text-sm font-mono leading-relaxed">
+              The system queries a localized JSON lookup table that maps strict mathematical HEX codes to human-readable industrial names (e.g., "BIT Durg Charcoal Gray").
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- FIERY CUSTOM CURSOR ---
+    const cursor = document.getElementById('custom-cursor');
+    document.addEventListener('mousemove', (e) => {
+      cursor.style.left = `${e.clientX}px`;
+      cursor.style.top = `${e.clientY}px`;
+    });
+
+    // --- GSAP REVEAL ---
+    window.onload = () => {
+      gsap.from(".gsap-reveal", { opacity: 0, y: 30, duration: 1.2, stagger: 0.2, ease: "power3.out" });
+    };
+
+    // --- CALIBRATION LOOKUP DB (Simulated JSON mapping) ---
+    const colorDB = [
+      { hex: "#FF0000", name: "Absolute Red" },
+      { hex: "#00FF00", name: "Bio-Luminescent Green" },
+      { hex: "#0000FF", name: "Deep Void Blue" },
+      { hex: "#FF5500", name: "Spectrometer Hellfire" },
+      { hex: "#3C3C3C", name: "BIT Durg Charcoal Gray" },
+      { hex: "#FFFFFF", name: "Pure Calibration White" },
+      { hex: "#000000", name: "Dark Matter" }
+    ];
+
+    // Hex distance algorithm to find closest human name
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
+
+    function getClosestColorName(targetHex) {
+      const targetRgb = hexToRgb(targetHex);
+      if (!targetRgb) return "Unknown Surface";
+      
+      let closestName = "Unknown Surface";
+      let minDistance = Infinity;
+
+      for (const color of colorDB) {
+        const dbRgb = hexToRgb(color.hex);
+        const dist = Math.sqrt(
+          Math.pow(targetRgb.r - dbRgb.r, 2) +
+          Math.pow(targetRgb.g - dbRgb.g, 2) +
+          Math.pow(targetRgb.b - dbRgb.b, 2)
+        );
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestName = color.name;
+        }
+      }
+      return closestName;
+    }
+
+    // --- LIVE POLLING ---
+    const valR = document.getElementById('val-r'), valG = document.getElementById('val-g'), valB = document.getElementById('val-b');
+    const hexEl = document.getElementById('hex-code');
+    const colorStage = document.getElementById('color-stage');
+    const colorNameEl = document.getElementById('color-name');
+
+    setInterval(async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/v1/scan/latest');
+        if (response.status === 200) {
+          const data = await response.json();
+          if (data) {
+             const r = data.opticalR || 0;
+             const g = data.opticalG || 0;
+             const b = data.opticalB || 0;
+             
+             valR.innerText = r;
+             valG.innerText = g;
+             valB.innerText = b;
+
+             // Java Backend provides Hex Code natively now, but if missing, fallback to JS transpile
+             let hex = data.hexCode;
+             if (!hex) {
+                const normR = Math.min(255, Math.max(0, r));
+                const normG = Math.min(255, Math.max(0, g));
+                const normB = Math.min(255, Math.max(0, b));
+                hex = "#" + ((1 << 24) + (normR << 16) + (normG << 8) + normB).toString(16).slice(1).toUpperCase();
+             }
+             
+             // Check if sensor is disconnected
+             if (r === 0 && g === 0 && b === 0) {
+               hexEl.innerText = "NO SIGNAL";
+               colorNameEl.innerText = "SENSOR FAULT";
+               colorStage.style.backgroundColor = "#000000";
+             } else {
+               hexEl.innerText = hex;
+               colorStage.style.backgroundColor = hex;
+               colorNameEl.innerText = getClosestColorName(hex);
+             }
+          }
+        }
+      } catch (e) {
+        hexEl.innerText = "OFFLINE";
+        colorNameEl.innerText = "SYSTEM DOWN";
+      }
+    }, 1000);
+
+    // --- MANUAL HARDWARE SCAN SIMULATION ---
+    const btnScanColor = document.getElementById('btn-scan-color');
+    btnScanColor.addEventListener('click', async () => {
+       const isFault = Math.random() < 0.1; // 10% chance of sensor fault
+       
+       const payload = isFault ? {
+         deviceId: "colorimeter-input",
+         timestamp: Date.now(),
+         opticalR: 0, opticalG: 0, opticalB: 0,
+         conductivityMv: 0
+       } : {
+         deviceId: "colorimeter-input",
+         timestamp: Date.now(),
+         opticalR: Math.floor(Math.random() * 256),
+         opticalG: Math.floor(Math.random() * 256),
+         opticalB: Math.floor(Math.random() * 256),
+         conductivityMv: 0 // Not relevant for colorimeter
+       };
+
+       btnScanColor.innerText = "Scanning...";
+       btnScanColor.classList.add("animate-pulse");
+
+       try {
+         const res = await fetch('http://localhost:8080/api/v1/scan/manual', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         });
+         
+         if (res.status === 423) {
+             alert("HARDWARE LOCKOUT: Real physical spectrometer is currently streaming data! Simulated module rejected.");
+         } else if (!res.ok) {
+             throw new Error("Server rejected scan.");
+         }
+       } catch (e) {
+         alert("ERROR: Backend disconnected. Please start the Spring Boot server to process scans.");
+       } finally {
+         setTimeout(() => {
+           btnScanColor.innerText = "Simulate Hardware Scan";
+           btnScanColor.classList.remove("animate-pulse");
+         }, 800);
+       }
+    });
+  </script>
+</body>
+</html>
