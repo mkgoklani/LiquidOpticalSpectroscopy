@@ -61,11 +61,13 @@ public class IngestionService {
         // Explicit flag OR device pattern match → simulated
         boolean isSimulated = Boolean.TRUE.equals(dto.isSimulated) || isSimDevice;
 
-        // Hardware lockout: block simulated reads within 10s of real hardware data
+        // Hardware lockout: disabled to allow seamless simulation even when hardware is active
+        /*
         if (isSimulated && (System.currentTimeMillis() - lastHardwareTimestamp < HARDWARE_LOCKOUT_WINDOW_MS)) {
             logger.warn("Hardware lockout active. Rejecting simulated payload from device: {}", deviceId);
             throw new IllegalStateException("HARDWARE_ACTIVE_LOCKOUT");
         }
+        */
 
         dto.isSimulated = isSimulated;
         processInternal(dto);
