@@ -309,10 +309,9 @@
         const response = await fetch('http://localhost:8080/api/v1/scan/latest');
         if (response.ok) { processScan(await response.json()); }
       } catch (e) {
-        const base = Math.random() > 0.5 ? { r: 220, g: 40, b: 40 } : { r: 40, g: 220, b: 40 };
-        processScan({ r: base.r + Math.floor(Math.random() * 30 - 15), g: base.g + Math.floor(Math.random() * 30 - 15), b: base.b + Math.floor(Math.random() * 30 - 15), conductivity: (Math.random() * 200 + 300).toFixed(1), purity: Math.floor(Math.random() * 10 + 85) });
+        console.warn("Telemetry connection offline. Waiting for backend...");
       }
-    }, 1000);
+    }, 200);
 
   </script>
 </body>

@@ -433,7 +433,7 @@
     // --- APPLICATION LOGIC ---
     let isSessionActive = false;
     let sessionDataCount = 0;
-    let totalDataCount = 1042; // Base mock dataset size
+    let totalDataCount = 0;
     let currentLiquidName = "";
     let currentLiquidPurity = 100;
     
@@ -498,16 +498,30 @@
     });
 
     // Toggle Session
-    btnToggle.addEventListener('click', () => {
+    btnToggle.addEventListener('click', async () => {
       if (!isSessionActive) {
         if (!inputName.value.trim()) {
           alert("Please enter a Target Liquid Name before starting.");
           return;
         }
-        // Start Session
-        isSessionActive = true;
         currentLiquidName = inputName.value.trim();
         currentLiquidPurity = parseFloat(inputPurity.value) || 100;
+
+        try {
+          const res = await fetch(`http://localhost:8080/api/v1/scan/session/start?liquidName=${encodeURIComponent(currentLiquidName)}&expectedPurity=${currentLiquidPurity}`, {
+            method: 'POST'
+          });
+          if (!res.ok) {
+            alert("Failed to start session on backend.");
+            return;
+          }
+        } catch (err) {
+          alert("Backend offline. Cannot start session.");
+          return;
+        }
+
+        // Start Session
+        isSessionActive = true;
         
         // Lock inputs
         inputName.disabled = true;
@@ -527,6 +541,12 @@
         if (sessionDataCount === 0) dataLog.innerHTML = "";
 
       } else {
+        try {
+          await fetch('http://localhost:8080/api/v1/scan/session/stop', { method: 'POST' });
+        } catch (err) {
+          console.warn("Failed to notify backend of stopped session.");
+        }
+
         // Stop Session
         isSessionActive = false;
         
@@ -640,7 +660,7 @@
 
     function clamp(val) { return Math.min(255, Math.max(0, val)); }
 
-    // Backend Polling & Actual Fetch
+    // Backend Polling & Actual Fetch (accelerated to 200ms)
     let lastTimestamp = 0;
     setInterval(async () => {
       if (!isSessionActive) return;
@@ -672,7 +692,7 @@
            // statusUI.innerHTML = `<span class="text-red-500">Connection to spectrometer hardware lost. Please check connection.</span>`;
         }
       }
-    }, 1000);
+    }, 200);
 
     // AI Training Workflow mapped to Python Server
     btnTrain.addEventListener('click', async () => {
@@ -830,19 +850,20 @@
       }
     });
 
-    // --- LIVE REAL SCAN COUNT (polls /count/real every 5s) ---
+    // --- LIVE REAL SCAN COUNT (polls /count/real every 2s) ---
     const totalCountEl = document.getElementById('total-count');
     async function refreshRealCount() {
       try {
         const res = await fetch('http://localhost:8080/api/v1/scan/count/real');
         if (res.ok) {
           const data = await res.json();
-          totalCountEl.textContent = data.count.toLocaleString();
+          totalDataCount = data.count;
+          totalCountEl.textContent = totalDataCount.toLocaleString();
         }
       } catch (e) { totalCountEl.textContent = '—'; }
     }
     refreshRealCount();
-    setInterval(refreshRealCount, 5000);
+    setInterval(refreshRealCount, 2000);
 
   </script>
 </body>

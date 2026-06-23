@@ -27,6 +27,26 @@ public class IngestionService {
         "manual-input", "simulated", "colorimeter-input", "demo", "test"
     );
 
+    // Active dataset collection session state
+    private volatile boolean sessionActive = false;
+    private volatile String sessionLiquidName = "";
+    private volatile Double sessionExpectedPurity = 100.0;
+    private volatile SpectrometerData latestScan = null;
+
+    public void startSession(String liquidName, Double expectedPurity) {
+        this.sessionLiquidName = liquidName;
+        this.sessionExpectedPurity = expectedPurity;
+        this.sessionActive = true;
+    }
+
+    public void stopSession() {
+        this.sessionActive = false;
+    }
+
+    public SpectrometerData getLatestScan() {
+        return this.latestScan;
+    }
+
     // ------------------------------------------------------------------
     // Public API — called by MqttConfig (real hardware)
     // ------------------------------------------------------------------
@@ -97,10 +117,9 @@ public class IngestionService {
             data.setConductivityMv(dto.conductivityMv);
             data.setIsSimulated(isSimulated);
 
-            // Purity: sensor fault = 0%, otherwise physics-based estimate
+            // Baseline physics calculation for live monitoring
             if (dto.opticalR == 0 && dto.opticalG == 0 && dto.opticalB == 0) {
                 data.setPurityPercentage(0.0);
-                logger.warn("Sensor fault (all zeros) — Device: {} | Simulated: {}", data.getDeviceId(), isSimulated);
             } else {
                 double purity = 100
                         - (dto.conductivityMv * 0.1)
@@ -110,11 +129,25 @@ public class IngestionService {
 
             data.setHexCode(rgbToHex(data.getOpticalR(), data.getOpticalG(), data.getOpticalB()));
 
-            repository.save(data);
-            logger.info("[{}{}] Device: {} | HEX: {} | Purity: {}%",
-                    isSimulated ? "SIM" : "REAL",
-                    isSimulated ? " ⚠" : " ✓",
-                    data.getDeviceId(), data.getHexCode(), data.getPurityPercentage());
+            // Always update the volatile latestScan for UI real-time polling
+            this.latestScan = data;
+
+            // Only persist to database during an active session
+            if (isSimulated) {
+                if (sessionActive) {
+                    data.setDeviceId(sessionLiquidName);
+                    data.setPurityPercentage(sessionExpectedPurity);
+                }
+                repository.save(data);
+                logger.info("[SIM ⚠] Device: {} | HEX: {} | Purity: {}%", data.getDeviceId(), data.getHexCode(), data.getPurityPercentage());
+            } else if (sessionActive) {
+                data.setDeviceId(sessionLiquidName);
+                data.setPurityPercentage(sessionExpectedPurity);
+                repository.save(data);
+                logger.info("[REAL ✓] Session: {} | HEX: {} | Purity: {}%", data.getDeviceId(), data.getHexCode(), data.getPurityPercentage());
+            } else {
+                logger.debug("[REAL DISCARDED] Not in active session. HEX: {}", data.getHexCode());
+            }
 
         } catch (Exception e) {
             logger.error("Failed to persist scan data", e);

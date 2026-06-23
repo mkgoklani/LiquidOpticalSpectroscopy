@@ -76,9 +76,29 @@ public class SpectrometerController {
 
     @GetMapping("/latest")
     public ResponseEntity<SpectrometerData> getLatestScan() {
+        SpectrometerData latest = ingestionService.getLatestScan();
+        if (latest != null) {
+            return ResponseEntity.ok(latest);
+        }
         return repository.findTopByOrderByTimestampDesc()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/session/start")
+    public ResponseEntity<String> startSession(
+            @RequestParam String liquidName,
+            @RequestParam Double expectedPurity) {
+        ingestionService.startSession(liquidName, expectedPurity);
+        logger.info("Session started: liquidName={}, expectedPurity={}", liquidName, expectedPurity);
+        return ResponseEntity.ok("Session started");
+    }
+
+    @PostMapping("/session/stop")
+    public ResponseEntity<String> stopSession() {
+        ingestionService.stopSession();
+        logger.info("Session stopped.");
+        return ResponseEntity.ok("Session stopped");
     }
 
     @GetMapping("/history")

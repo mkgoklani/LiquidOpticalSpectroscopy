@@ -15,8 +15,8 @@
 // ------------------------------------------------------------
 
 // Wi-Fi credentials
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID     = "Redmi Note 10 Pro Max";
+const char* WIFI_PASSWORD = "11111111";
 
 // MQTT Broker
 const char* MQTT_BROKER   = "broker.emqx.io";   // <-- Public EMQX Broker
@@ -25,7 +25,19 @@ const char* MQTT_TOPIC    = "iot/spectrometer/raw";
 const char* DEVICE_ID     = "MILAAWAT-NODE-01";
 
 // Scan interval (milliseconds)
-const unsigned long SCAN_INTERVAL = 2000;
+const unsigned long SCAN_INTERVAL = 200;
+
+// RGB Sensor Calibration Parameters
+// Black references (measured under total darkness - black paper & lights off)
+const long CAL_BLACK_R = 50;
+const long CAL_BLACK_G = 50;
+const long CAL_BLACK_B = 50;
+
+// White references (measured under reference white - white paper)
+// We set these as defaults first; we'll update them once measured!
+long calWhiteR = 5000;
+long calWhiteG = 5000;
+long calWhiteB = 5000;
 
 // NTP settings
 const char* NTP_SERVER_1 = "pool.ntp.org";
@@ -145,11 +157,16 @@ void performScanAndPublish() {
   delay(10); // Allow transient response to settle
   int rawAnalog = analogRead(COND_PIN);
   digitalWrite(ZAP_PIN, LOW); // Turn off immediately to prevent electrode polarization/corrosion
-  int conductivityMv = (int)((rawAnalog * 3300.0) / 1023.0);
+  
+  // Software noise-floor filter to clamp floating pin noise (when open-circuit/on wood)
+  int conductivityMv = 0;
+  if (rawAnalog > 20) {
+    conductivityMv = (int)((rawAnalog * 3300.0) / 1023.0);
+  }
 
   // 2. Run Optical Color Scan
   digitalWrite(LED_PIN, HIGH);
-  delay(50); // Allow stabilization
+  delay(10); // Allow stabilization
 
   long freqR = readChannel(LOW,  LOW);   
   long freqG = readChannel(HIGH, HIGH);  
@@ -158,12 +175,10 @@ void performScanAndPublish() {
 
   digitalWrite(LED_PIN, LOW);
 
-  // Edge cases: avoid zero division, handle sensor blockage/failure
-  if (freqC == 0) freqC = 1;
-
-  float normR = (float)freqR / freqC;
-  float normG = (float)freqG / freqC;
-  float normB = (float)freqB / freqC;
+  // Map raw sensor frequencies to 0-255 RGB range using calibration parameters
+  int rVal = map(freqR, CAL_BLACK_R, calWhiteR, 0, 255);
+  int gVal = map(freqG, CAL_BLACK_G, calWhiteG, 0, 255);
+  int bVal = map(freqB, CAL_BLACK_B, calWhiteB, 0, 255);
 
   // Build JSON
   StaticJsonDocument<256> doc;
@@ -181,9 +196,9 @@ void performScanAndPublish() {
     doc["timestamp"] = millis(); 
   }
   
-  doc["optical_r"] = constrain((int)(normR * 255.0), 0, 255);
-  doc["optical_g"] = constrain((int)(normG * 255.0), 0, 255);
-  doc["optical_b"] = constrain((int)(normB * 255.0), 0, 255);
+  doc["optical_r"] = constrain(rVal, 0, 255);
+  doc["optical_g"] = constrain(gVal, 0, 255);
+  doc["optical_b"] = constrain(bVal, 0, 255);
   doc["conductivity_mv"] = conductivityMv; 
   doc["isSimulated"] = false;
 
@@ -209,12 +224,12 @@ void performScanAndPublish() {
 long readChannel(uint8_t s2, uint8_t s3) {
   digitalWrite(TCS_S2, s2);
   digitalWrite(TCS_S3, s3);
-  delay(10); 
+  delay(5); 
 
   long count = 0;
   unsigned long start = millis();
-  // 100ms reading window
-  while (millis() - start < 100) {
+  // 20ms reading window
+  while (millis() - start < 20) {
     ESP.wdtFeed(); // Keep watchdog happy during while loop
     
     // Timeout check for digitalRead block: prevent hanging if sensor gets disconnected
@@ -222,12 +237,12 @@ long readChannel(uint8_t s2, uint8_t s3) {
       count++;
       unsigned long waitLowStart = millis();
       while (digitalRead(TCS_OUT) == HIGH) {
-         if (millis() - waitLowStart > 10) break; // Timeout if stuck HIGH for 10ms
+         if (millis() - waitLowStart > 5) break; // Timeout if stuck HIGH for 5ms
          ESP.wdtFeed();
       }
     }
   }
-  return count * 10; // Convert to Hz
+  return count * 50; // Convert to Hz
 }
 
 // ------------------------------------------------------------
