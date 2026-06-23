@@ -19,9 +19,9 @@ const char* WIFI_SSID     = "YOUR_WIFI_SSID";
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 // MQTT Broker
-const char* MQTT_BROKER   = "192.168.1.100";   // <-- CHANGE THIS
+const char* MQTT_BROKER   = "broker.emqx.io";   // <-- Public EMQX Broker
 const int   MQTT_PORT     = 1883;
-const char* MQTT_TOPIC    = "spectrometer/data";
+const char* MQTT_TOPIC    = "iot/spectrometer/raw";
 const char* DEVICE_ID     = "MILAAWAT-NODE-01";
 
 // Scan interval (milliseconds)
@@ -33,14 +33,16 @@ const char* NTP_SERVER_2 = "time.nist.gov";
 const char* NTP_SERVER_3 = "time.google.com";
 
 // ------------------------------------------------------------
-// 2. PIN MAPPING
+// 2. PIN MAPPING (Updated to match physical wiring)
 // ------------------------------------------------------------
-#define TCS_S0   14  // D5
-#define TCS_S1   12  // D6
-#define TCS_S2   13  // D7
-#define TCS_S3   15  // D8
-#define TCS_OUT   2  // D4
-#define LED_PIN   5  // D1
+#define TCS_S0    5  // D1
+#define TCS_S1    4  // D2
+#define TCS_S2    0  // D3
+#define TCS_S3    2  // D4
+#define TCS_OUT  14  // D5
+#define LED_PIN  12  // D6
+#define ZAP_PIN  13  // D7 (High-Speed Zap Gate)
+#define COND_PIN A0  // A0 (Analog Milk Impedance)
 
 // ------------------------------------------------------------
 // 3. GLOBAL OBJECTS
@@ -70,6 +72,11 @@ void setup() {
 
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW); 
+
+  // Impedance & Zap Gate pins
+  pinMode(ZAP_PIN, OUTPUT);
+  digitalWrite(ZAP_PIN, LOW); 
+  pinMode(COND_PIN, INPUT); 
 
   // 20% scaling
   digitalWrite(TCS_S0, HIGH);
@@ -133,6 +140,14 @@ void loop() {
 void performScanAndPublish() {
   sampleID++;
 
+  // 1. Run Conductivity/Impedance Scan (Zap Gate)
+  digitalWrite(ZAP_PIN, HIGH);
+  delay(10); // Allow transient response to settle
+  int rawAnalog = analogRead(COND_PIN);
+  digitalWrite(ZAP_PIN, LOW); // Turn off immediately to prevent electrode polarization/corrosion
+  int conductivityMv = (int)((rawAnalog * 3300.0) / 1023.0);
+
+  // 2. Run Optical Color Scan
   digitalWrite(LED_PIN, HIGH);
   delay(50); // Allow stabilization
 
@@ -169,7 +184,7 @@ void performScanAndPublish() {
   doc["optical_r"] = constrain((int)(normR * 255.0), 0, 255);
   doc["optical_g"] = constrain((int)(normG * 255.0), 0, 255);
   doc["optical_b"] = constrain((int)(normB * 255.0), 0, 255);
-  doc["conductivity_mv"] = 0; 
+  doc["conductivity_mv"] = conductivityMv; 
   doc["isSimulated"] = false;
 
   char payload[256];
