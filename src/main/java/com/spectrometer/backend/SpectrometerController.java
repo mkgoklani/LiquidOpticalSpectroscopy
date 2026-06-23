@@ -110,7 +110,7 @@ public class SpectrometerController {
     /** Returns only REAL (non-simulated) scan records — used by the Python AI server for training. */
     @GetMapping("/history/real")
     public ResponseEntity<List<SpectrometerData>> getRealHistory() {
-        List<SpectrometerData> real = repository.findTop500ByIsSimulatedFalseOrderByTimestampDesc();
+        List<SpectrometerData> real = repository.findByIsSimulatedFalseOrderByTimestampDesc();
         return real.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(real);
     }
 
@@ -128,7 +128,7 @@ public class SpectrometerController {
      */
     @GetMapping("/export")
     public ResponseEntity<Map<String, Object>> exportDataset() {
-        List<SpectrometerData> realData = repository.findTop500ByIsSimulatedFalseOrderByTimestampDesc();
+        List<SpectrometerData> realData = repository.findByIsSimulatedFalseOrderByTimestampDesc();
 
         if (realData.isEmpty()) {
             return ResponseEntity.ok(Map.of("status", "empty", "count", 0,

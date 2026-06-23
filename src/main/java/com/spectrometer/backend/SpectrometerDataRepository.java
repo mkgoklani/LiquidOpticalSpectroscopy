@@ -18,6 +18,9 @@ public interface SpectrometerDataRepository extends JpaRepository<SpectrometerDa
     // Last 500 REAL records only — used for AI training and CSV export
     List<SpectrometerData> findTop500ByIsSimulatedFalseOrderByTimestampDesc();
 
+    // All REAL records only — used for full dataset operations
+    List<SpectrometerData> findByIsSimulatedFalseOrderByTimestampDesc();
+
     // Count of real records — for stat cards and auto-import guard
     long countByIsSimulatedFalse();
 }
