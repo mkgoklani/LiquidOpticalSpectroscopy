@@ -7,6 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class IngestionService {
@@ -15,6 +19,12 @@ public class IngestionService {
 
     @Autowired
     private SpectrometerDataRepository repository;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${ai.server.url:http://localhost:5001}")
+    private String aiServerUrl;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -117,15 +127,58 @@ public class IngestionService {
             data.setConductivityMv(dto.conductivityMv);
             data.setIsSimulated(isSimulated);
 
-            // Baseline physics calculation for live monitoring
+            // Purity prediction: first try AI model, fall back to calibrated formula
+            double purity = 0.0;
             if (dto.opticalR == 0 && dto.opticalG == 0 && dto.opticalB == 0) {
-                data.setPurityPercentage(0.0);
+                purity = 0.0;
             } else {
-                double purity = 100
-                        - (dto.conductivityMv * 0.1)
-                        - (Math.abs(dto.opticalR - 150) * 0.1);
-                data.setPurityPercentage(Math.round(Math.max(0, Math.min(100, purity)) * 100.0) / 100.0);
+                boolean aiSuccess = false;
+                try {
+                    Map<String, Object> reqBody = new HashMap<>();
+                    reqBody.put("opticalR", dto.opticalR);
+                    reqBody.put("opticalG", dto.opticalG);
+                    reqBody.put("opticalB", dto.opticalB);
+                    reqBody.put("conductivityMv", dto.conductivityMv);
+
+                    // Call AI server
+                    Map<String, Object> resp = restTemplate.postForObject(
+                        aiServerUrl + "/api/ai/predict", reqBody, Map.class);
+                    
+                    if (resp != null && "success".equals(resp.get("status"))) {
+                        Object predObj = resp.get("prediction");
+                        if (predObj != null) {
+                            purity = ((Number) predObj).doubleValue();
+                            aiSuccess = true;
+                        }
+                    }
+                } catch (Exception e) {
+                    // Fall back quietly
+                }
+
+                if (!aiSuccess) {
+                    // Calibrated mathematical formula fallback based on conductivity:
+                    // 100% -> 1930 mV
+                    // 90%  -> 1835 mV
+                    // 70%  -> 1620 mV
+                    // 10%  -> 1335 mV
+                    // 0%   -> ~800 mV
+                    double cond = dto.conductivityMv;
+                    if (cond >= 1930) {
+                        purity = 100.0;
+                    } else if (cond >= 1835) {
+                        purity = 90.0 + (cond - 1835) * (10.0 / 95.0);
+                    } else if (cond >= 1620) {
+                        purity = 70.0 + (cond - 1620) * (20.0 / 215.0);
+                    } else if (cond >= 1335) {
+                        purity = 10.0 + (cond - 1335) * (60.0 / 285.0);
+                    } else if (cond >= 800) {
+                        purity = 0.0 + (cond - 800) * (10.0 / 535.0);
+                    } else {
+                        purity = 0.0;
+                    }
+                }
             }
+            data.setPurityPercentage(Math.round(Math.max(0.0, Math.min(100.0, purity)) * 100.0) / 100.0);
 
             data.setHexCode(rgbToHex(data.getOpticalR(), data.getOpticalG(), data.getOpticalB()));
 
