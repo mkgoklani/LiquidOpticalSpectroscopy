@@ -15,8 +15,8 @@
 // ------------------------------------------------------------
 
 // Wi-Fi credentials
-const char* WIFI_SSID     = "Redmi Note 10 Pro Max";
-const char* WIFI_PASSWORD = "11111111";
+const char* WIFI_SSID     = "HOD-IT";
+const char* WIFI_PASSWORD = "Bit1234@";
 
 // MQTT Broker
 const char* MQTT_BROKER   = "broker.emqx.io";   // <-- Public EMQX Broker

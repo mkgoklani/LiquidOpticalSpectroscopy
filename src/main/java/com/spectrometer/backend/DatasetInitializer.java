@@ -54,7 +54,7 @@ public class DatasetInitializer implements CommandLineRunner {
                 String line = lines.get(i).trim();
                 if (line.isEmpty()) continue;
                 try {
-                    // Format: deviceId,timestamp,opticalR,opticalG,opticalB,conductivityMv,purityPercentage,hexCode
+                    // Format: deviceId,timestamp,opticalR,opticalG,opticalB,conductivityMv,purityPpm,hexCode
                     String[] p = line.split(",", 8);
                     if (p.length < 8) { skipped++; continue; }
 
@@ -65,7 +65,7 @@ public class DatasetInitializer implements CommandLineRunner {
                     data.setOpticalG(Integer.parseInt(p[3].trim()));
                     data.setOpticalB(Integer.parseInt(p[4].trim()));
                     data.setConductivityMv(Integer.parseInt(p[5].trim()));
-                    data.setPurityPercentage(Double.parseDouble(p[6].trim()));
+                    data.setPurityPpm(Double.parseDouble(p[6].trim()));
                     data.setHexCode(p[7].trim());
                     data.setIsSimulated(false); // CSV only contains real scans
 

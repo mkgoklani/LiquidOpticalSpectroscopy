@@ -40,7 +40,7 @@ public class IngestionService {
     // Active dataset collection session state
     private volatile boolean sessionActive = false;
     private volatile String sessionLiquidName = "";
-    private volatile Double sessionExpectedPurity = 100.0;
+    private volatile Double sessionExpectedPurity = 1000.0;
     private volatile SpectrometerData latestScan = null;
 
     public void startSession(String liquidName, Double expectedPurity) {
@@ -157,28 +157,28 @@ public class IngestionService {
 
                 if (!aiSuccess) {
                     // Calibrated mathematical formula fallback based on conductivity:
-                    // 100% -> 1930 mV
-                    // 90%  -> 1835 mV
-                    // 70%  -> 1620 mV
-                    // 10%  -> 1335 mV
-                    // 0%   -> ~800 mV
+                    // 1000 ppm -> 1930 mV
+                    // 900 ppm  -> 1835 mV
+                    // 700 ppm  -> 1620 mV
+                    // 100 ppm  -> 1335 mV
+                    // 0 ppm    -> ~800 mV
                     double cond = dto.conductivityMv;
                     if (cond >= 1930) {
-                        purity = 100.0;
+                        purity = 1000.0;
                     } else if (cond >= 1835) {
-                        purity = 90.0 + (cond - 1835) * (10.0 / 95.0);
+                        purity = 900.0 + (cond - 1835) * (100.0 / 95.0);
                     } else if (cond >= 1620) {
-                        purity = 70.0 + (cond - 1620) * (20.0 / 215.0);
+                        purity = 700.0 + (cond - 1620) * (200.0 / 215.0);
                     } else if (cond >= 1335) {
-                        purity = 10.0 + (cond - 1335) * (60.0 / 285.0);
+                        purity = 100.0 + (cond - 1335) * (600.0 / 285.0);
                     } else if (cond >= 800) {
-                        purity = 0.0 + (cond - 800) * (10.0 / 535.0);
+                        purity = 0.0 + (cond - 800) * (100.0 / 535.0);
                     } else {
                         purity = 0.0;
                     }
                 }
             }
-            data.setPurityPercentage(Math.round(Math.max(0.0, Math.min(100.0, purity)) * 100.0) / 100.0);
+            data.setPurityPpm(Math.round(Math.max(0.0, Math.min(1000.0, purity)) * 100.0) / 100.0);
 
             data.setHexCode(rgbToHex(data.getOpticalR(), data.getOpticalG(), data.getOpticalB()));
 
@@ -189,15 +189,15 @@ public class IngestionService {
             if (isSimulated) {
                 if (sessionActive) {
                     data.setDeviceId(sessionLiquidName);
-                    data.setPurityPercentage(sessionExpectedPurity);
+                    data.setPurityPpm(sessionExpectedPurity);
                 }
                 repository.save(data);
-                logger.info("[SIM ⚠] Device: {} | HEX: {} | Purity: {}%", data.getDeviceId(), data.getHexCode(), data.getPurityPercentage());
+                logger.info("[SIM ⚠] Device: {} | HEX: {} | Purity: {} ppm", data.getDeviceId(), data.getHexCode(), data.getPurityPpm());
             } else if (sessionActive) {
                 data.setDeviceId(sessionLiquidName);
-                data.setPurityPercentage(sessionExpectedPurity);
+                data.setPurityPpm(sessionExpectedPurity);
                 repository.save(data);
-                logger.info("[REAL ✓] Session: {} | HEX: {} | Purity: {}%", data.getDeviceId(), data.getHexCode(), data.getPurityPercentage());
+                logger.info("[REAL ✓] Session: {} | HEX: {} | Purity: {} ppm", data.getDeviceId(), data.getHexCode(), data.getPurityPpm());
             } else {
                 logger.debug("[REAL DISCARDED] Not in active session. HEX: {}", data.getHexCode());
             }

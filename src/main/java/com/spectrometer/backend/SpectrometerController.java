@@ -24,7 +24,7 @@ public class SpectrometerController {
 
     private static final Logger logger = LoggerFactory.getLogger(SpectrometerController.class);
     public  static final Path DATASET_CSV = Paths.get("dataset", "training_data.csv");
-    private static final String CSV_HEADER = "deviceId,timestamp,opticalR,opticalG,opticalB,conductivityMv,purityPercentage,hexCode\n";
+    private static final String CSV_HEADER = "deviceId,timestamp,opticalR,opticalG,opticalB,conductivityMv,purityPpm,hexCode\n";
 
     @Autowired private SpectrometerDataRepository repository;
     @Autowired private IngestionService ingestionService;
@@ -143,7 +143,7 @@ public class SpectrometerController {
                     safe(d.getDeviceId()), d.getTimestamp(),
                     d.getOpticalR(), d.getOpticalG(), d.getOpticalB(),
                     d.getConductivityMv(),
-                    d.getPurityPercentage() != null ? d.getPurityPercentage() : 0.0,
+                    d.getPurityPpm() != null ? d.getPurityPpm() : 0.0,
                     safe(d.getHexCode())));
             }
             Files.writeString(DATASET_CSV, sb.toString());

@@ -16,7 +16,7 @@ public class SpectrometerData {
     private Integer opticalG;
     private Integer opticalB;
     private Integer conductivityMv;
-    private Double purityPercentage; // Used later by AI models
+    private Double purityPpm; // Used later by AI models
     private String hexCode;          // Bonus Feature: Digital Eyedropper
     private Boolean isSimulated = false; // true = synthetic/simulated data, excluded from AI training
 
@@ -38,8 +38,8 @@ public class SpectrometerData {
     public void setOpticalB(Integer opticalB) { this.opticalB = opticalB; }
     public Integer getConductivityMv() { return conductivityMv; }
     public void setConductivityMv(Integer conductivityMv) { this.conductivityMv = conductivityMv; }
-    public Double getPurityPercentage() { return purityPercentage; }
-    public void setPurityPercentage(Double purityPercentage) { this.purityPercentage = purityPercentage; }
+    public Double getPurityPpm() { return purityPpm; }
+    public void setPurityPpm(Double purityPpm) { this.purityPpm = purityPpm; }
     public String getHexCode() { return hexCode; }
     public void setHexCode(String hexCode) { this.hexCode = hexCode; }
     public Boolean getIsSimulated() { return isSimulated != null && isSimulated; }

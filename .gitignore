@@ -36,13 +36,44 @@ out/
 ### VS Code ###
 .vscode/
 
-### Python / AI Server ###
-# model.joblib is managed by the triple-gate Git Sync feature in the AI server.
-# Do NOT commit it manually — use the Sync Model to Git button in training.html.
-ai_training/model.joblib
-ai_training/__pycache__/
-ai_training/*.pyc
-
-### H2 File Database ###
-# Persistent H2 database files — local only, not for version control.
+### Datasets & Data ###
+dataset/
 data/
+*.csv
+ai_training/*.csv
+
+### AI Models & Weights ###
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.keras
+*.onnx
+*.pt
+*.pth
+*.tflite
+*.bin
+ai_training/*.joblib
+ai_training/model*.joblib
+ai_training/model_backup.joblib
+
+### Python Environments & Caches ###
+venv/
+.venv/
+env/
+ai_training/venv/
+__pycache__/
+ai_training/__pycache__/
+*.py[cod]
+*$py.class
+
+### Logs & Scratch Files ###
+*.log
+ai_server.log
+bootrun.log
+bootrun_error.log
+asus_page.html
+ddg_test.html
+yahoo_test.html
+package_esp8266com_index.json
+.DS_Store

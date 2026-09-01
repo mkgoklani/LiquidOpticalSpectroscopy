@@ -277,11 +277,10 @@
     const scanHistory = [];
 
     function classifyLiquid(r, g, b, cond, purity) {
-      if (purity >= 95) return "PURE MILK";
-      if (purity >= 80) return "SLIGHTLY DILUTED MILK";
-      if (purity >= 50) return "MODERATELY DILUTED MILK";
-      if (purity >= 20) return "HEAVILY DILUTED MILK";
-      return "WATER / ADULTERATED";
+      if (purity >= 80) return "CONCENTRATED CHROMIUM SOLUTION";
+      if (purity >= 40) return "STANDARD CHROMIUM SOLUTION";
+      if (purity >= 10) return "DILUTED CHROMIUM SOLUTION";
+      return "TRACE CHROMIUM / WATER";
     }
 
     function processScan(data) {

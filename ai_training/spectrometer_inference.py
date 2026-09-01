@@ -156,14 +156,14 @@ class SpectrometerInference:
             'opticalB': np.random.normal(150, 40, n_samples).clip(0, 255).astype(int),
             'conductivityMv': np.random.normal(220, 110, n_samples).clip(0, 1000).astype(int),
         })
-        df['purityPercentage'] = np.maximum(
+        df['purityPpm'] = np.maximum(
             0,
-            100 - (df['conductivityMv'] * 0.1)
-            - (np.abs(df['opticalR'] - 150) * 0.05)
-            - (np.abs(df['opticalG'] - 150) * 0.05)
-            - (np.abs(df['opticalB'] - 150) * 0.05)
-            + np.random.normal(0, 6, n_samples)
-        ).clip(0, 100)
+            1000 - (df['conductivityMv'] * 1.0)
+            - (np.abs(df['opticalR'] - 150) * 0.5)
+            - (np.abs(df['opticalG'] - 150) * 0.5)
+            - (np.abs(df['opticalB'] - 150) * 0.5)
+            + np.random.normal(0, 60, n_samples)
+        ).clip(0, 1000)
         return df
 
     # ------------------------------------------------------------------
@@ -171,7 +171,7 @@ class SpectrometerInference:
     # ------------------------------------------------------------------
     def _prepare(self, df):
         """Clean, impute, scale and split the dataset."""
-        required = {'opticalR', 'opticalG', 'opticalB', 'conductivityMv', 'purityPercentage'}
+        required = {'opticalR', 'opticalG', 'opticalB', 'conductivityMv', 'purityPpm'}
         missing  = required - set(df.columns)
         if missing:
             raise ValueError(f"Dataset missing columns: {missing}")
@@ -192,7 +192,7 @@ class SpectrometerInference:
             raise ValueError("No valid training rows remain after cleaning.")
 
         features = df[['opticalR', 'opticalG', 'opticalB', 'conductivityMv']]
-        target   = df['purityPercentage'].fillna(df['purityPercentage'].mean())
+        target   = df['purityPpm'].fillna(df['purityPpm'].mean())
 
         scaler    = StandardScaler()
         X_scaled  = scaler.fit_transform(features)
@@ -245,7 +245,7 @@ class SpectrometerInference:
 
         X        = np.array([[r, g, b, cnd]])
         X_scaled = self.scaler.transform(X)
-        return float(np.clip(self.model.predict(X_scaled)[0], 0, 100))
+        return float(np.clip(self.model.predict(X_scaled)[0], 0, 1000))
 
     # ------------------------------------------------------------------
     # Polling loop (used when running as standalone script)
@@ -261,7 +261,7 @@ class SpectrometerInference:
                     if current_ts and current_ts != self.last_timestamp:
                         self.last_timestamp = current_ts
                         result = self.predict(payload)
-                        log.info("Scan ts=%s => purity=%.1f%%", current_ts, result
+                        log.info("Scan ts=%s => purity=%.1f ppm", current_ts, result
                                  if isinstance(result, float) else result)
                 elif resp.status_code == 204:
                     log.debug("Backend has no scan data yet.")
